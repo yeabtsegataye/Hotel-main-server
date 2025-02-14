@@ -10,9 +10,15 @@ import { CustomLogger } from './logging/logger.service';
 import { ConfigModule } from '@nestjs/config';
 import { PackeageModule } from './packeage/packeage.module';
 import { Packeage } from './packeage/entities/packeage.entity';
+import { PaymentsModule } from './payment/payment.module';
+import { Payment } from './payment/entities/payment.entity';
+import { ChapaModule } from 'chapa-nestjs';
 
 @Module({
   imports: [
+    ChapaModule.register({
+      secretKey: process.env.CHAPA_SECRET_KEY,//secretKey
+    }),
     ConfigModule.forRoot(),// for env
     TypeOrmModule.forRoot({
       type: 'mysql',
@@ -21,12 +27,13 @@ import { Packeage } from './packeage/entities/packeage.entity';
       username: process.env.USER_NAME,
       password: process.env.PASSWORD,
       database: process.env.DB,
-      entities: [User, Packeage],
+      entities: [User, Packeage, Payment],
       synchronize: false,
     }),
     UsersModule,
     AuthModule,
     PackeageModule,
+    PaymentsModule,
     ThrottlerModule.forRoot([
       {
         ttl: 60000,

@@ -62,11 +62,11 @@ export class AuthService {
 
         const accessToken = this.jwtService.sign(payload, {
           secret: jwtConstants.Access_secret,
-          expiresIn: '15m',
+          expiresIn: '1d',
         });
         const refreshToken = this.jwtService.sign(payload, {
           secret: jwtConstants.Refresh_secret,
-          expiresIn: '7d',
+          expiresIn: '10d',
         });
 
         res.cookie('refresh_token', refreshToken, {
@@ -159,7 +159,7 @@ export class AuthService {
         { id, email },
         {
           secret: jwtConstants.Access_secret,
-          expiresIn: '15m',
+          expiresIn: '1d',
         },
       );
       console.log('sented acc ', accessToken);

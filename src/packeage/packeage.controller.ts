@@ -22,7 +22,7 @@ export class PackeageController {
   findOne(@Param('id') id: string) {
     return this.packeageService.findOne(+id);
   }
-
+  @Public()
   @Patch(':id')
   update(@Param('id') id: string, @Body() updatePackeageDto: UpdatePackeageDto) {
     return this.packeageService.update(+id, updatePackeageDto);

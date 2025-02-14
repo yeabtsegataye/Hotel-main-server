@@ -13,6 +13,10 @@ import {
     @IsNotEmpty({ message: 'Name is required' })
     name: string;
   
+    // @IsString()
+    // @IsNotEmpty({ message: 'user is required' })
+    // user_id: string;
+
     @IsNumber()
     @IsPositive({ message: 'Subscription date must be a positive number' })
     sub_date: number;
