@@ -71,7 +71,7 @@ export class AuthService {
 
         res.cookie('refresh_token', refreshToken, {
           httpOnly: true,
-          secure: false, // Set to true in production
+          secure: true, // Set to true in production
          // sameSite: 'lax', // or 'lax'
         });
         console.log(accessToken,'payload', payload)
@@ -128,7 +128,7 @@ export class AuthService {
 
     res.cookie('refresh_token', refreshToken, {
       httpOnly: true,
-      secure: false, // Set to true in production
+      secure: true, // Set to true in production
       //sameSite: 'lax', // or 'lax'
     });
 
