@@ -71,8 +71,8 @@ export class AuthService {
 
         res.cookie('refresh_token', refreshToken, {
           httpOnly: true,
-          secure: true, // Set to true in production
-         // sameSite: 'lax', // or 'lax'
+          secure: true, // Ensure this is true for HTTPS
+          sameSite: 'none', // Needed for cross-origin cookies
         });
         console.log(accessToken,'payload', payload)
         return res.send({ accessToken ,payload });
@@ -128,9 +128,10 @@ export class AuthService {
 
     res.cookie('refresh_token', refreshToken, {
       httpOnly: true,
-      secure: true, // Set to true in production
-      //sameSite: 'lax', // or 'lax'
+      secure: true, // Ensure this is true for HTTPS
+      sameSite: 'none', // Needed for cross-origin cookies
     });
+    
 
     return res.send({ accessToken ,payload});
   }
