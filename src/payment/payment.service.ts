@@ -58,7 +58,7 @@ export class PaymentsService {
       amount: data[0].price.toString(),
       tx_ref: tx_ref,
       callback_url: 'https://example.com/',
-      return_url: `https://landing-agay.onrender.com/payment_processing?tx_ref=${tx_ref}&packeg_id=${createPaymentDto.packeg_id}&user_id=${createPaymentDto.user_id}`,      customization: {
+      return_url: `https://landing-henna-seven.vercel.app/payment_processing?tx_ref=${tx_ref}&packeg_id=${createPaymentDto.packeg_id}&user_id=${createPaymentDto.user_id}`,      customization: {
         title: this.truncate(data[0].name, TITLE_LIMIT),
         description: this.truncate(data[0].description, DESCRIPTION_LIMIT),
       },
