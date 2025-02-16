@@ -34,16 +34,16 @@ export class AuthGuard implements CanActivate {
       COOKIE_AUTH_ONLY,
       [context.getHandler(), context.getClass()],
     );
-
+    console.log(isCookieAuthOnly, 'cookies guard');
     const request = context.switchToHttp().getRequest<Request>();
 
     // Check if the route should be validated by cookies only
     if (isCookieAuthOnly) {
       const refresh_token = request.cookies?.refresh_token;
+      console.log('ref tokn guard', refresh_token);
       if (!refresh_token) {
         throw new UnauthorizedException('No access token found in cookies');
       }
-
       try {
         const accessPayload = await this.jwtService.verifyAsync(refresh_token, {
           secret: jwtConstants.Refresh_secret,
