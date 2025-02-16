@@ -12,4 +12,9 @@ export class PaymentsController {
   async chapaPayment(@Body() createPaymentDto: CreatePaymentDto){
     return this.paymentsService.chapaPayment(createPaymentDto);
   }
+
+  @Post('processing')
+  async processing(@Body() createPaymentDto: CreatePaymentDto){
+    return this.paymentsService.processing(createPaymentDto);
+  }
 }

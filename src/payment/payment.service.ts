@@ -30,6 +30,9 @@ export class PaymentsService {
   ) {}
 
   async chapaPayment(createPaymentDto: CreatePaymentDto) {
+    if (!createPaymentDto.packeg_id || !createPaymentDto.user_id) {
+      throw new Error('Both packeg and user are required.');
+    }
     const TITLE_LIMIT = 16;
     const DESCRIPTION_LIMIT = 50;
 
@@ -55,44 +58,52 @@ export class PaymentsService {
       amount: data[0].price.toString(),
       tx_ref: tx_ref,
       callback_url: 'https://example.com/',
-      return_url: 'https://www.instagram.com/',
+      return_url: `https://landing-agay.onrender.com/payment_processing?tx_ref=${tx_ref}?packeg_id=${createPaymentDto.packeg_id}?user_id=${createPaymentDto.user_id}`, // Add tx_ref as query parameter
       customization: {
         title: this.truncate(data[0].name, TITLE_LIMIT),
         description: this.truncate(data[0].description, DESCRIPTION_LIMIT),
       },
     });
-    // console.log('chapa ',response)
-    // console.log('chapa resp',response)
+     console.log('chapa resp',response)
     if (response.status !== 'success') {
       return { msg: 'something went wrong on payment' };
     }
     if (response.status === 'success') {
+      return response;
+    } else {
+      throw new Error('Payment initialization failed');
+    }
+  }
+
+  // verfi payment
+  async processing(createPaymentDto: CreatePaymentDto) {
+    console.log('txref from processing', createPaymentDto);
+    ////////////////////
+    try {
       const verifyPayment = await this.chapaService.verify({
-        tx_ref: tx_ref,
+        tx_ref: createPaymentDto.tx_ref,
       });
-      console.log('vvvvv',verifyPayment.data.status)
-      // if (verifyPayment.data.status !== 'success') {
-      //   return { msg: 'something went wrong on saving payment' };
-      // }
-      if (verifyPayment.status === 'success') {
+      console.log(verifyPayment, 'the verified 11111111');
+      if (verifyPayment.data.status == 'success') {
+        const data = await this.packegRepository.query(
+          `SELECT * FROM packages WHERE id = ?`,
+          [createPaymentDto.packeg_id],
+        );
+        if (data.length == 0) return { data: 'no packge found' };
         // Save Payment Record
         const payment = this.paymentsRepository.create({
           ...createPaymentDto,
           amount: data[0].price,
           packeg_id: data[0].id,
           status: verifyPayment.status,
-          transaction_id: tx_ref,
+          transaction_id: createPaymentDto.tx_ref,
           user_id: createPaymentDto.user_id.toString(), // Convert bigint to string
         });
-
         await this.paymentsRepository.save(payment);
-        // console.log('payment 1111 ',payment)
-
+        console.log('the seved payment', payment);
         const userdata_for_license = await this.userData(
           createPaymentDto.user_id,
         );
-        // console.log('licence1212',userdata_for_license)
-
         try {
           if (userdata_for_license.licenceKey) {
             const License_Payload = await this.jwtService.verifyAsync(
@@ -101,25 +112,26 @@ export class PaymentsService {
                 secret: jwtConstants.Licence_secret,
               },
             );
-          
+
             const sub_date = await this.getPackeg(createPaymentDto.packeg_id);
-          
+
             const issuedAt = License_Payload.iat;
             const expiresAt = License_Payload.exp;
-          
+
             // Calculate the duration in months
             const durationInMonths = (expiresAt - issuedAt) / 2629746;
-          
+
             // Convert durationInMonths to a number and add to sub_date.sub_date
-            const total_sub = sub_date.sub_date + Number(durationInMonths.toFixed(2));
+            const total_sub =
+              sub_date.sub_date + Number(durationInMonths.toFixed(2));
             // console.log('subtt',sub_date.sub_date)
             // console.log('convo',Number(durationInMonths.toFixed(2)))
             console.log('toatllll', total_sub);
-          
+
             const licenseKey = this.generateLicenseKey(
               createPaymentDto.user_id,
               data[0].id,
-              total_sub
+              total_sub,
             );
             await this.userRepository.update(
               { id: createPaymentDto.user_id },
@@ -127,42 +139,38 @@ export class PaymentsService {
                 licenceKey: licenseKey,
               },
             );
-            
+            return { data: 'succsuccess' };
+          } else if (!userdata_for_license.licenceKey) {
+            const sub_date = await this.getPackeg(createPaymentDto.packeg_id);
+            //console.log('sub date', sub_date);
+            // Generate License Key using JWT
+            const licenseKey = this.generateLicenseKey(
+              createPaymentDto.user_id,
+              data[0].id,
+              sub_date.sub_date,
+            );
+            console.log('licensekey', licenseKey);
+            await this.userRepository.update(
+              { id: createPaymentDto.user_id },
+              {
+                licenceKey: licenseKey,
+              },
+            );
+            return { data: 'succsuccess' };
+          } else {
+            return { data: 'failed' };
           }
-          else if(!userdata_for_license.licenceKey){
-                 const sub_date = await this.getPackeg(createPaymentDto.packeg_id);
-          //console.log('sub date', sub_date);
-          // Generate License Key using JWT
-          const licenseKey = this.generateLicenseKey(
-            createPaymentDto.user_id,
-            data[0].id,
-            sub_date.sub_date,
-          );
-         // console.log('licensekey', licenseKey);
-          await this.userRepository.update(
-            { id: createPaymentDto.user_id },
-            {
-              licenceKey: licenseKey,
-            },
-          );
-          }
-          else{
-            throw new Error("faild on payment proccessing");
-            
-          }
-     
         } catch (error) {
-          console.log(error, 'on updating user licence');
-          return;
+          console.log(error, 'error on updating user licence');
+          return { data: 'failed' };
         }
-
-        console.log('User updated successfully');
       } else {
-        throw new Error('Something went wrong while verifying payment');
+        return { data: 'unknown error on payment' };
       }
-      return response;
-    } else {
-      throw new Error('Payment initialization failed');
+
+      /////////////////
+    } catch (error) {
+      return { msg: 'something went wrong on saving payment' };
     }
   }
   // to get user data
