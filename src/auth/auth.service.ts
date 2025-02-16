@@ -202,6 +202,7 @@ export class AuthService {
   }
   //////////////////
   async Logout(@Res() res: Response, @Req() req: CustomRequest) {
+    console.log('removing cokies')
     res.clearCookie('refresh_token');
     res.end();
     return;

@@ -3,6 +3,7 @@
 import { Controller, Post, Body, } from '@nestjs/common';
 import { PaymentsService } from './payment.service';
 import { CreatePaymentDto } from './dto/create-payment.dto';
+import { CookieAuthOnly } from 'src/auth/cookie-auth.decorator';
 
 @Controller('payment')
 export class PaymentsController {
@@ -12,7 +13,8 @@ export class PaymentsController {
   async chapaPayment(@Body() createPaymentDto: CreatePaymentDto){
     return this.paymentsService.chapaPayment(createPaymentDto);
   }
-
+  
+  @CookieAuthOnly()
   @Post('processing')
   async processing(@Body() createPaymentDto: CreatePaymentDto){
     return this.paymentsService.processing(createPaymentDto);
