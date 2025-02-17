@@ -138,7 +138,7 @@ export class PaymentsService {
                 licenceKey: licenseKey,
               },
             );
-            return { data: 'success' };
+            return { data: 'success', redirectUrl: 'https://hotel-main-dashboard.onrender.com' };
           } else if (!userdata_for_license.licenceKey) {
             const sub_date = await this.getPackeg(createPaymentDto.packeg_id);
             //console.log('sub date', sub_date);
@@ -155,7 +155,7 @@ export class PaymentsService {
                 licenceKey: licenseKey,
               },
             );
-            return { data: 'success' };
+            return { data: 'success', redirectUrl: 'https://hotel-main-dashboard.onrender.com' };
           } else {
             return { data: 'failed' };
           }
