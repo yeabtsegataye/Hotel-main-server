@@ -1,0 +1,112 @@
+// src/auth/guards/auth.guard.ts
+import {
+    CanActivate,
+    ExecutionContext,
+    Injectable,
+    UnauthorizedException,
+    ForbiddenException,
+  } from '@nestjs/common';
+  import { JwtService } from '@nestjs/jwt';
+  import { jwtConstants } from './constants';
+  import { Request } from 'express';
+  import { IS_PUBLIC_KEY } from './public.decorator';
+  import { COOKIE_AUTH_ONLY } from './cookie-auth.decorator';
+  import { Reflector } from '@nestjs/core';
+  
+  @Injectable()
+  export class AuthGuard implements CanActivate {
+    constructor(
+      private jwtService: JwtService,
+      private readonly reflector: Reflector,
+    ) {}
+  
+    async canActivate(context: ExecutionContext): Promise<boolean> {
+      const isPublic = this.reflector.getAllAndOverride<boolean>(IS_PUBLIC_KEY, [
+        context.getHandler(),
+        context.getClass(),
+      ]);
+  
+      if (isPublic) {
+        return true; // Allow access to public routes
+      }
+  
+      const isCookieAuthOnly = this.reflector.getAllAndOverride<boolean>(
+        COOKIE_AUTH_ONLY,
+        [context.getHandler(), context.getClass()],
+      );
+  
+      
+      console.log(isCookieAuthOnly, 'cookies guard');
+      const request = context.switchToHttp().getRequest<Request>();
+  
+      // Check if the route should be validated by cookies only
+      if (isCookieAuthOnly) {
+        const refresh_token = request.cookies?.refresh_token;
+        console.log('ref tokn guard', refresh_token);
+        if (!refresh_token) {
+          throw new UnauthorizedException('No access token found in cookies');
+        }
+        try {
+          const accessPayload = await this.jwtService.verifyAsync(refresh_token, {
+            secret: jwtConstants.Refresh_secret,
+          });
+          request['user'] = accessPayload;
+          return true;
+        } catch (error) {
+          if (error.name === 'TokenExpiredError') {
+            throw new ForbiddenException('Access token expired');
+          } else {
+            throw new UnauthorizedException('Invalid access token');
+          }
+        }
+      }
+  
+      // Default token validation (from headers or cookies)
+      const accessToken = this.extractAccessToken(request);
+      const refreshToken = this.extractRefreshToken(request);
+  
+      if (!accessToken || !refreshToken) {
+        throw new UnauthorizedException('No tokens found');
+      }
+  
+      try {
+        const accessPayload = await this.jwtService.verifyAsync(accessToken, {
+          secret: jwtConstants.Access_secret,
+        });
+        request['user'] = accessPayload;
+      } catch (error) {
+        if (error.name === 'TokenExpiredError') {
+          throw new ForbiddenException('Access token expired');
+        } else {
+          throw new UnauthorizedException('Invalid access token');
+        }
+      }
+  
+      try {
+        await this.jwtService.verifyAsync(refreshToken, {
+          secret: jwtConstants.Refresh_secret,
+        });
+      } catch (refreshError) {
+        if (refreshError.name === 'TokenExpiredError') {
+          throw new UnauthorizedException('Refresh token expired');
+        } else {
+          throw new UnauthorizedException('Invalid refresh token');
+        }
+      }
+  
+      return true;
+    }
+  
+    private extractAccessToken(request: Request): string | undefined {
+      const authHeader = request.headers.authorization;
+      if (authHeader && authHeader.startsWith('Bearer ')) {
+        return authHeader.split(' ')[1];
+      }
+      return request.cookies?.access_token;
+    }
+  
+    private extractRefreshToken(request: Request): string | undefined {
+      return request.cookies?.refresh_token;
+    }
+  }
+  

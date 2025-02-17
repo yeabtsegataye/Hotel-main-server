@@ -1,4 +1,3 @@
-// src/auth/guards/auth.guard.ts
 import {
   CanActivate,
   ExecutionContext,
@@ -10,7 +9,6 @@ import { JwtService } from '@nestjs/jwt';
 import { jwtConstants } from './constants';
 import { Request } from 'express';
 import { IS_PUBLIC_KEY } from './public.decorator';
-import { COOKIE_AUTH_ONLY } from './cookie-auth.decorator';
 import { Reflector } from '@nestjs/core';
 
 @Injectable()
@@ -30,40 +28,16 @@ export class AuthGuard implements CanActivate {
       return true; // Allow access to public routes
     }
 
-    const isCookieAuthOnly = this.reflector.getAllAndOverride<boolean>(
-      COOKIE_AUTH_ONLY,
-      [context.getHandler(), context.getClass()],
-    );
-    console.log(isCookieAuthOnly, 'cookies guard');
     const request = context.switchToHttp().getRequest<Request>();
 
-    // Check if the route should be validated by cookies only
-    if (isCookieAuthOnly) {
-      const refresh_token = request.cookies?.refresh_token;
-      console.log('ref tokn guard', refresh_token);
-      if (!refresh_token) {
-        throw new UnauthorizedException('No access token found in cookies');
-      }
-      try {
-        const accessPayload = await this.jwtService.verifyAsync(refresh_token, {
-          secret: jwtConstants.Refresh_secret,
-        });
-        request['user'] = accessPayload;
-        return true;
-      } catch (error) {
-        if (error.name === 'TokenExpiredError') {
-          throw new ForbiddenException('Access token expired');
-        } else {
-          throw new UnauthorizedException('Invalid access token');
-        }
-      }
-    }
-
-    // Default token validation (from headers or cookies)
     const accessToken = this.extractAccessToken(request);
     const refreshToken = this.extractRefreshToken(request);
 
+    console.log(accessToken, 'my ddddddd', refreshToken);
+
     if (!accessToken || !refreshToken) {
+      console.log(accessToken, 'my refffffffffffff', refreshToken);
+
       throw new UnauthorizedException('No tokens found');
     }
 
@@ -71,19 +45,23 @@ export class AuthGuard implements CanActivate {
       const accessPayload = await this.jwtService.verifyAsync(accessToken, {
         secret: jwtConstants.Access_secret,
       });
-      request['user'] = accessPayload;
+      request['user'] = accessPayload; // Attach payload to request
     } catch (error) {
+      console.log(error.name, 'errrrorr');
       if (error.name === 'TokenExpiredError') {
-        throw new ForbiddenException('Access token expired');
+        // If the access token is expired, check the refresh token
+        throw new ForbiddenException('Access token expired ');
       } else {
         throw new UnauthorizedException('Invalid access token');
       }
     }
-
+    //////////////////////
     try {
       await this.jwtService.verifyAsync(refreshToken, {
         secret: jwtConstants.Refresh_secret,
       });
+
+      // Refresh token is valid, but access token is expired, so return 403
     } catch (refreshError) {
       if (refreshError.name === 'TokenExpiredError') {
         throw new UnauthorizedException('Refresh token expired');
@@ -96,14 +74,17 @@ export class AuthGuard implements CanActivate {
   }
 
   private extractAccessToken(request: Request): string | undefined {
+    // Check Authorization header for access token
     const authHeader = request.headers.authorization;
     if (authHeader && authHeader.startsWith('Bearer ')) {
       return authHeader.split(' ')[1];
     }
+    // Check cookies for access token
     return request.cookies?.access_token;
   }
 
   private extractRefreshToken(request: Request): string | undefined {
+    // Check cookies for refresh token
     return request.cookies?.refresh_token;
   }
 }

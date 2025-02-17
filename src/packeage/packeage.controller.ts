@@ -3,6 +3,7 @@ import { PackeageService } from './packeage.service';
 import { CreatePackeageDto } from './dto/create-packeage.dto';
 import { UpdatePackeageDto } from './dto/update-packeage.dto';
 import { Public } from 'src/auth/public.decorator';
+import { CookieAuthOnly } from 'src/auth/cookie-auth.decorator';
 
 @Controller('packeage')
 export class PackeageController {
@@ -12,7 +13,8 @@ export class PackeageController {
   create(@Body() createPackeageDto: CreatePackeageDto) {
     return this.packeageService.create(createPackeageDto);
   }
-  @Public()
+
+  // @CookieAuthOnly()
   @Get('get')
   findAll() {
     return this.packeageService.findAll();

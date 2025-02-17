@@ -16,10 +16,11 @@ import { ChapaModule } from 'chapa-nestjs';
 
 @Module({
   imports: [
+    ConfigModule.forRoot(),// for env
     ChapaModule.register({
       secretKey: process.env.CHAPA_SECRET_KEY,//secretKey
     }),
-    ConfigModule.forRoot(),// for env
+   
     TypeOrmModule.forRoot({
       type: 'mysql',
       host: process.env.HOST,
