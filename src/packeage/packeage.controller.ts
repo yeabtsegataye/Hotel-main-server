@@ -15,6 +15,7 @@ export class PackeageController {
   }
 
   // @CookieAuthOnly()
+  @Public()
   @Get('get')
   findAll() {
     return this.packeageService.findAll();
