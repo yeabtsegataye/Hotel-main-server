@@ -33,10 +33,10 @@ export class AuthGuard implements CanActivate {
     const accessToken = this.extractAccessToken(request);
     const refreshToken = this.extractRefreshToken(request);
 
-    console.log(accessToken, 'my ddddddd', refreshToken);
+    // console.log(accessToken, 'my ddddddd', refreshToken);
 
     if (!accessToken || !refreshToken) {
-      console.log(accessToken, 'my refffffffffffff', refreshToken);
+      // console.log(accessToken, 'my refffffffffffff', refreshToken);
 
       throw new UnauthorizedException('No tokens found');
     }

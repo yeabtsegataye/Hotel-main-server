@@ -74,7 +74,7 @@ export class AuthService {
           secure: true, // Ensure this is true for HTTPS
           sameSite: 'none', // Needed for cross-origin cookies
         });
-        console.log(accessToken,'payload', payload)
+        // console.log(accessToken,'payload', payload)
         return res.send({ accessToken ,payload });
       } catch (error) {
         console.error('Error hashing password:', error);
@@ -163,7 +163,7 @@ export class AuthService {
           expiresIn: '1d',
         },
       );
-      console.log('sented acc ', accessToken);
+      // console.log('sented acc ', accessToken);
       return res.send({ accessToken ,payload });
     } catch (error) {
       if (error.name === 'TokenExpiredError') {
