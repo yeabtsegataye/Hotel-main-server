@@ -16,7 +16,7 @@ async function bootstrap() {
   app.useGlobalPipes(new ValidationPipe());
 
   app.enableCors({
-    origin: ['http://localhost:5173','http://localhost:5174','https://hotel-main-dashboard.onrender.com','https://landing-agay.onrender.com','https://landing-henna-seven.vercel.app'],
+    origin: ['http://localhost:5173','http://localhost:5174','https://hotel-main-dashboard.onrender.com','https://landing-agay.onrender.com'],
     methods: 'GET,HEAD,PUT,PATCH,POST,DELETE',
     allowedHeaders: 'Content-Type, Accept, Authorization',
     credentials: true,
