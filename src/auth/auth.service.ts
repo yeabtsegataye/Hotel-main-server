@@ -18,7 +18,6 @@ import { CustomRequest } from './custom-request.interface';
 
 @Injectable()
 export class AuthService {
-
   constructor(
     @InjectRepository(User)
     private userRepository: Repository<User>,
@@ -75,7 +74,7 @@ export class AuthService {
           sameSite: 'none', // Needed for cross-origin cookies
         });
         // console.log(accessToken,'payload', payload)
-        return res.send({ accessToken ,payload });
+        return res.send({ accessToken, payload });
       } catch (error) {
         console.error('Error hashing password:', error);
         return res.status(500).send('Error creating user');
@@ -83,7 +82,6 @@ export class AuthService {
     }
   }
   /////////////////////////////////
-
   async login(@Body() authDTO: CreateAuthDto, @Res() res: Response) {
     const SECRET_KEY = process.env.SECRET_KEY; // Ensure this matches the frontend key
     const decryptData = (encryptedData: string) => {
@@ -131,9 +129,74 @@ export class AuthService {
       secure: true, // Ensure this is true for HTTPS
       sameSite: 'none', // Needed for cross-origin cookies
     });
-    
 
-    return res.send({ accessToken ,payload});
+    return res.send({ accessToken, payload });
+  }
+  /////////////////////////////////
+  async Dlogin(@Body() authDTO: CreateAuthDto, @Res() res: Response) {
+    const SECRET_KEY = process.env.SECRET_KEY; // Ensure this matches the frontend key
+    const decryptData = (encryptedData: string) => {
+      try {
+        const bytes = CryptoJS.AES.decrypt(encryptedData, SECRET_KEY);
+        return bytes.toString(CryptoJS.enc.Utf8);
+      } catch (error) {
+        console.error('Error decrypting data:', error);
+        throw new UnauthorizedException('Invalid encrypted data');
+      }
+    };
+
+    const decryptedPassword = decryptData(authDTO.Password);
+    if (!decryptedPassword) {
+      return res.status(400).send('Invalid user name or password');
+    }
+
+    const user = await this.userRepository.findOne({
+      where: { email: authDTO.email },
+    });
+
+    if (!user) {
+      return res.status(404).send('No user found');
+    }
+
+    const isMatch = await bcrypt.compare(decryptedPassword, user.Password);
+    if (!isMatch) {
+      throw new UnauthorizedException();
+    }
+    if (!user.licenceKey) {
+      return res.status(404).send('No licence found');
+    } else if (user.licenceKey) {
+      try {
+        await this.jwtService.verifyAsync(user.licenceKey, {
+          secret: jwtConstants.Licence_secret,
+        });
+        const payload = { id: user.id, email: user.email };
+
+        const accessToken = this.jwtService.sign(payload, {
+          secret: jwtConstants.Access_secret,
+          expiresIn: '1d',
+        });
+
+        const refreshToken = this.jwtService.sign(payload, {
+          secret: jwtConstants.Refresh_secret,
+          expiresIn: '10d',
+        });
+
+        res.cookie('refresh_token', refreshToken, {
+          httpOnly: true,
+          secure: true, // Ensure this is true for HTTPS
+          sameSite: 'none', // Needed for cross-origin cookies
+        });
+
+        return res.send({ accessToken, payload });
+      } catch (error) {
+        if (error.name === 'TokenExpiredError') {
+          throw new UnauthorizedException(
+            'license key expired, please get a new one',
+          );
+        }
+        throw new UnauthorizedException('Invalid license key');
+      }
+    }
   }
   /////////////////////////////////
   private extractAccessToken(access_token: string) {
@@ -155,7 +218,7 @@ export class AuthService {
         secret: jwtConstants.Refresh_secret,
       });
       const { id, email } = Payload;
-      const payload = {id, email}
+      const payload = { id, email };
       const accessToken = this.jwtService.sign(
         { id, email },
         {
@@ -164,7 +227,7 @@ export class AuthService {
         },
       );
       // console.log('sented acc ', accessToken);
-      return res.send({ accessToken ,payload });
+      return res.send({ accessToken, payload });
     } catch (error) {
       if (error.name === 'TokenExpiredError') {
         throw new UnauthorizedException(
@@ -202,7 +265,7 @@ export class AuthService {
   }
   //////////////////
   async Logout(@Res() res: Response, @Req() req: CustomRequest) {
-    console.log('removing cokies')
+    console.log('removing cokies');
     res.clearCookie('refresh_token');
     res.end();
     return;

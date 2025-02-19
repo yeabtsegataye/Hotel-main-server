@@ -9,11 +9,18 @@ import { JwtService } from '@nestjs/jwt';
 import { jwtConstants } from './constants';
 import { Request } from 'express';
 import { IS_PUBLIC_KEY } from './public.decorator';
+import { COOKIE_AUTH_ONLY } from './cookie-auth.decorator';
 import { Reflector } from '@nestjs/core';
+import { LICENSE_AUTH_ONLY } from './license.auth.decorator';
+import { InjectRepository } from '@nestjs/typeorm';
+import { User } from 'src/users/entities/user.entity';
+import { Repository } from 'typeorm';
 
 @Injectable()
 export class AuthGuard implements CanActivate {
   constructor(
+    @InjectRepository(User)
+    private userRepository: Repository<User>,
     private jwtService: JwtService,
     private readonly reflector: Reflector,
   ) {}
@@ -23,21 +30,91 @@ export class AuthGuard implements CanActivate {
       context.getHandler(),
       context.getClass(),
     ]);
-
-    if (isPublic) {
-      return true; // Allow access to public routes
-    }
-
+    ///////////////////////////////////
+    const isCookieAuthOnly = this.reflector.getAllAndOverride<boolean>(
+      COOKIE_AUTH_ONLY,
+      [context.getHandler(), context.getClass()],
+    );
+    ///////////////////////////////////
+    const islicenseAuthOnly = this.reflector.getAllAndOverride<boolean>(
+      LICENSE_AUTH_ONLY,
+      [context.getHandler(), context.getClass()],
+    );
+    ///////////////////////////////////
     const request = context.switchToHttp().getRequest<Request>();
 
     const accessToken = this.extractAccessToken(request);
     const refreshToken = this.extractRefreshToken(request);
 
-    // console.log(accessToken, 'my ddddddd', refreshToken);
+    if (isPublic) {
+      return true; // Allow access to public routes
+    }
+
+    // Check if the route should be validated by cookies only
+    if (isCookieAuthOnly) {
+      const refresh_token = request.cookies?.refresh_token;
+
+      if (!refresh_token) {
+        throw new UnauthorizedException('No access token found in cookies');
+      }
+      try {
+        const accessPayload = await this.jwtService.verifyAsync(refresh_token, {
+          secret: jwtConstants.Refresh_secret,
+        });
+        request['user'] = accessPayload;
+        return true;
+      } catch (error) {
+        if (error.name === 'TokenExpiredError') {
+          throw new ForbiddenException('Access token expired');
+        } else {
+          throw new UnauthorizedException('Invalid access token');
+        }
+      }
+    }
+    /////////////////////////////////////
+    if (islicenseAuthOnly) {
+      console.log(accessToken,'acc')
+      if (!accessToken) {
+        throw new UnauthorizedException('No access token found');
+      }
+
+      try {
+        // Verify the access token
+        const accessPayload = await this.jwtService.verifyAsync(accessToken, {
+          secret: jwtConstants.Access_secret,
+        });
+        request['user'] = accessPayload; // Attach payload to request
+
+        // Fetch the user from the database using the payload
+        const user = await this.userRepository.findOne({ where: { id: accessPayload.id } });
+        if (!user) {
+          throw new UnauthorizedException('User not found');
+        }
+
+        // Check if the user has a valid license key
+        if (!user.licenceKey) {
+          console.log('no license');
+          throw new UnauthorizedException('No license key found for the user');
+        }
+
+        // Verify the license key
+        await this.jwtService.verifyAsync(user.licenceKey, {
+          secret: jwtConstants.Licence_secret,
+        });
+
+        return true; // License key is valid
+      } catch (error) {
+        if (error.name === 'TokenExpiredError') {
+          console.log('exp');
+          throw new UnauthorizedException('License key expired');
+        } else {
+          console.log('invalid1111');
+          throw new UnauthorizedException('Invalid license key');
+        }
+      }
+    }
 
     if (!accessToken || !refreshToken) {
-      // console.log(accessToken, 'my refffffffffffff', refreshToken);
-
       throw new UnauthorizedException('No tokens found');
     }
 

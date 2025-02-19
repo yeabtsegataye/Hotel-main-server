@@ -13,6 +13,8 @@ import { Packeage } from './packeage/entities/packeage.entity';
 import { PaymentsModule } from './payment/payment.module';
 import { Payment } from './payment/entities/payment.entity';
 import { ChapaModule } from 'chapa-nestjs';
+import { BillsModule } from './bills/bills.module';
+import { Bill } from './bills/entities/bill.entity';
 
 @Module({
   imports: [
@@ -28,19 +30,21 @@ import { ChapaModule } from 'chapa-nestjs';
       username: process.env.USER_NAME,
       password: process.env.PASSWORD,
       database: process.env.DB,
-      entities: [User, Packeage, Payment],
+      entities: [User, Packeage, Payment, Bill],
       synchronize: true,
     }),
     UsersModule,
     AuthModule,
     PackeageModule,
     PaymentsModule,
+    BillsModule,
     ThrottlerModule.forRoot([
       {
         ttl: 60000,
         limit: 600,
       },
     ]),
+    BillsModule,
     ],
   providers: [
     CustomLogger,

@@ -24,6 +24,12 @@ export class AuthController {
     return this.authService.login(createAuthDto, res);
   }
 
+  @Throttle({ default: { limit: 31, ttl: 60000 } })
+  @Post('Dash_login')
+  @Public()
+  async DLogin(@Body() createAuthDto: CreateAuthDto, @Res() res: Response) {
+    return this.authService.Dlogin(createAuthDto, res);
+  }
   @Post('refresh-token')
   @Public()
   async refreshToken(@Res() res: Response, @Req() req: CustomRequest) {

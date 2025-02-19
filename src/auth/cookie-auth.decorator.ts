@@ -1,4 +1,4 @@
-// src/auth/decorators/cookie-auth.decorator.ts
+// src/auth/cookie-auth.decorator.ts
 import { SetMetadata } from '@nestjs/common';
 
 export const COOKIE_AUTH_ONLY = 'cookieAuthOnly';
