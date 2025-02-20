@@ -123,8 +123,8 @@ export class PaymentsService {
             // Convert durationInMonths to a number and add to sub_date.sub_date
             const total_sub =
               sub_date.sub_date + Number(durationInMonths.toFixed(2));
-            // console.log('subtt',sub_date.sub_date)
-            // console.log('convo',Number(durationInMonths.toFixed(2)))
+            console.log('subtt',sub_date.sub_date)
+            console.log('convo',Number(durationInMonths.toFixed(2)))
             console.log('toatllll', total_sub);
 
             const licenseKey = this.generateLicenseKey(
@@ -228,8 +228,8 @@ export class PaymentsService {
 
     const License = this.jwtService.sign(payload, {
       secret: jwtConstants.Licence_secret,
-      expiresIn: `${expiryInMinutes}m`, // Expires in minutes
-    });
+      expiresIn: `3m`, // Expires in minutes
+    });//${expiryInMinutes}
 
     return License;
   }
