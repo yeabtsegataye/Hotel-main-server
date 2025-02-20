@@ -99,7 +99,7 @@ export class PaymentsService {
           user_id: createPaymentDto.user_id.toString(), // Convert bigint to string
         });
         await this.paymentsRepository.save(payment);
-        console.log('the seved payment', payment);
+
         const userdata_for_license = await this.userData(
           createPaymentDto.user_id,
         );
@@ -160,6 +160,22 @@ export class PaymentsService {
             return { data: 'failed' };
           }
         } catch (error) {
+          if (error.name === 'TokenExpiredError') {
+            const sub_date = await this.getPackeg(createPaymentDto.packeg_id);
+
+            const licenseKey = this.generateLicenseKey(
+              createPaymentDto.user_id,
+              data[0].id,
+              sub_date.sub_date,
+            );
+            await this.userRepository.update(
+              { id: createPaymentDto.user_id },
+              {
+                licenceKey: licenseKey,
+              },
+            );
+            return { data: 'success', redirectUrl: 'https://hotel-main-dashboard.onrender.com' };
+          }
           console.log(error, 'error on updating user licence');
           return { data: 'failed' };
         }

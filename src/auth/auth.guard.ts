@@ -73,42 +73,51 @@ export class AuthGuard implements CanActivate {
     }
     /////////////////////////////////////
     if (islicenseAuthOnly) {
-      console.log(accessToken,'acc')
+      console.log(accessToken, 'acc');
       if (!accessToken) {
         throw new UnauthorizedException('No access token found');
       }
-
+    
       try {
         // Verify the access token
         const accessPayload = await this.jwtService.verifyAsync(accessToken, {
           secret: jwtConstants.Access_secret,
         });
         request['user'] = accessPayload; // Attach payload to request
-
+    
         // Fetch the user from the database using the payload
         const user = await this.userRepository.findOne({ where: { id: accessPayload.id } });
         if (!user) {
           throw new UnauthorizedException('User not found');
         }
-
+    
         // Check if the user has a valid license key
         if (!user.licenceKey) {
           console.log('no license');
           throw new UnauthorizedException('No license key found for the user');
         }
-
-        // Verify the license key
-        await this.jwtService.verifyAsync(user.licenceKey, {
+    
+        // Verify the license key and check its expiration
+        const decodedLicenceKey = await this.jwtService.verifyAsync(user.licenceKey, {
           secret: jwtConstants.Licence_secret,
         });
-
-        return true; // License key is valid
+        console.log(decodedLicenceKey, 'decodedLicenceKey');
+    
+        // Check if the license key is expired
+        const currentTime = Math.floor(Date.now() / 1000); // Current time in seconds
+        if (decodedLicenceKey.exp && decodedLicenceKey.exp < currentTime) {
+          console.log('License key expired');
+          throw new UnauthorizedException('License key expired');
+        }
+    
+        // License key is valid and not expired
+        return true;
       } catch (error) {
         if (error.name === 'TokenExpiredError') {
-          console.log('exp');
+          console.log('License key expired');
           throw new UnauthorizedException('License key expired');
         } else {
-          console.log('invalid1111');
+          console.log('Invalid license key');
           throw new UnauthorizedException('Invalid license key');
         }
       }
