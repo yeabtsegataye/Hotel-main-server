@@ -47,7 +47,7 @@ export class PaymentsService {
     // Generate Transaction Reference
     const tx_ref = await this.chapaService.generateTransactionReference();
     const userdata = await this.userData(createPaymentDto.user_id);
-    // console.log(userdata, 'user data');
+    console.log(userdata, 'user data');
     // Initialize Payment
 
     const response = await this.chapaService.initialize({
