@@ -283,8 +283,11 @@ export class AuthService {
   //////////////////
   async Logout(@Res() res: Response, @Req() req: CustomRequest) {
     console.log('removing cokies');
-    res.clearCookie('refresh_token');
-    res.end();
-    return;
+    res.clearCookie('refresh_token', {
+      httpOnly: true,
+      secure: true, // Must match the setting used when setting the cookie
+      sameSite: 'none', // Must match the setting used when setting the cookie
+    });
+    return res.status(200).send('Logged out successfully');
   }
 }
