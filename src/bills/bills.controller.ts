@@ -11,8 +11,8 @@ export class BillsController {
 
   @LicenseCheck()
   @Post('add')
-  create(@Body() createBillDto: CreateBillDto) { 
-    return this.billsService.create(createBillDto);
+  create(@Body() createBillDto: CreateBillDto,@Req() req: CustomRequest) { 
+    return this.billsService.create(createBillDto,req);
   }
  
   @LicenseCheck()

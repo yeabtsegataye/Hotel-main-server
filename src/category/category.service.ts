@@ -39,6 +39,7 @@ export class CategoryService {
 
     // Save the compressed image to the file system
     fs.writeFileSync(imagePath, compressedImage);
+    console.log(imagePath,'lllllll')
 
     // Save the category data to the database
     const category = this.categoryRepository.create({

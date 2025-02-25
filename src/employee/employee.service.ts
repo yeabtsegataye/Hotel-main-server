@@ -54,7 +54,7 @@ export class EmployeeService {
         HT_id: hotel_id,
         ...createEmployeeDto,
       });
-      console.log(newEmployee, 'new emp'); // Log the new employee object
+      //console.log(newEmployee, 'new emp'); // Log the new employee object
       return await this.employeeRepository.save(newEmployee); // Save to the database
     } catch (error) {
       console.error('Error while saving employee: ', error); // Log any error

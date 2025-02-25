@@ -73,7 +73,6 @@ export class AuthGuard implements CanActivate {
     }
     /////////////////////////////////////
     if (islicenseAuthOnly) {
-      console.log(accessToken, 'acc');
       if (!accessToken) {
         throw new UnauthorizedException('No access token found');
       }
@@ -101,7 +100,6 @@ export class AuthGuard implements CanActivate {
         const decodedLicenceKey = await this.jwtService.verifyAsync(user.licenceKey, {
           secret: jwtConstants.Licence_secret,
         });
-        console.log(decodedLicenceKey, 'decodedLicenceKey');
     
         // Check if the license key is expired
         const currentTime = Math.floor(Date.now() / 1000); // Current time in seconds
@@ -133,7 +131,6 @@ export class AuthGuard implements CanActivate {
       });
       request['user'] = accessPayload; // Attach payload to request
     } catch (error) {
-      console.log(error.name, 'errrrorr');
       if (error.name === 'TokenExpiredError') {
         // If the access token is expired, check the refresh token
         throw new ForbiddenException('Access token expired ');

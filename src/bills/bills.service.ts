@@ -19,15 +19,23 @@ export class BillsService {
     
   ) {}
 
-  async create(createBillDto: CreateBillDto): Promise<Bill> {
-    console.log(createBillDto,'cerat')
+  async create(createBillDto: CreateBillDto, @Req() req: CustomRequest): Promise<Bill> {
+    //console.log(createBillDto,'cerat')
     try {
-      const hotel = await this.hotelRepository.findOne({ where: { userId : createBillDto.user_id } });
-      if (!hotel) {
-        throw new NotFoundException(`Bill with ID ${createBillDto.user_id} not found`);
+      const authHeader = req.headers.authorization;
+      if (!authHeader || !authHeader.startsWith('Bearer ')) {
+        throw new UnauthorizedException('Invalid token');
       }
-      const hotel_id = hotel.id
-      const newBill = this.billsRepository.create({HT_id:hotel_id, ...createBillDto});
+
+      // Extract and verify token
+      const token = authHeader.split(' ')[1];
+      const decoded = this.jwtService.verify(token);
+
+      if (!decoded || !decoded.hotel_id) {
+        throw new UnauthorizedException('Invalid token payload');
+      }
+
+      const newBill = this.billsRepository.create({HT_id : decoded.hotel_id, ...createBillDto});
       return await this.billsRepository.save(newBill);
     } catch (error) {
       throw new InternalServerErrorException('Failed to create bill', error.message);

@@ -1,6 +1,22 @@
+import { IsString, IsNotEmpty } from 'class-validator';
+
 export class CreateCategoryDto {
-    name: string;
-    description: string;
-    status: string;
-    image: string; // This will store the path to the image
-  }
+  @IsString()
+  @IsNotEmpty()
+  categoryName: string;
+
+  @IsString()
+  @IsNotEmpty()
+  description: string;
+
+  @IsString()
+  @IsNotEmpty()
+  categoryType: string;
+
+  @IsString()
+  @IsNotEmpty()
+  status: string;
+
+  // This will be handled separately using multer
+  //image?: Express.Multer.File;
+}

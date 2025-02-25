@@ -28,7 +28,7 @@ export class AuthService {
   ) {}
 
   async Signup(AutDTO: CreateAuthDto, @Res() res: Response) {
-    console.log(AutDTO,'sii aut')
+    //console.log(AutDTO,'sii aut')
     const SECRET_KEY = process.env.SECRET_KEY; // Ensure this matches the frontend key
 
     const existingUser = await this.userRepository.findOne({
@@ -69,7 +69,7 @@ export class AuthService {
           userId: data.id
         });
         const Hotel_data = await this.hotelRepository.save(hotel);
-        console.log(Hotel_data, "hotel data")
+        //console.log(Hotel_data, "hotel data")
 
         const payload = { id: data.id, email: data.email, hotel_id: Hotel_data.id };
 
@@ -323,7 +323,6 @@ export class AuthService {
     const refreshToken = req.cookies.refresh_token;
     const access_token = req.headers.authorization;
     const user = req.body.user; // Extract licenseKey from the request body
-    console.log(req.body, 'bodyyy');
     //console.log(refreshToken, "ref" , access_token ,'accs')
     if (!refreshToken || !access_token || !user) {
       throw new UnauthorizedException('No token found');

@@ -19,7 +19,7 @@ export class CreateBillDto {
   })
   BL_SUB_Type: string;
 
-  @IsNumber({}, { message: 'HT_id must be a valid number' }) // Ensure it's a number, not a string
-  @IsNotEmpty()
-  user_id: any;
+  // @IsNumber({}, { message: 'HT_id must be a valid number' }) // Ensure it's a number, not a string
+  // @IsNotEmpty()
+  // user_id: any;
 }
