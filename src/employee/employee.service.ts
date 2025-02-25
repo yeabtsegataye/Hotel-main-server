@@ -2,6 +2,9 @@ import {
   ConflictException,
   Injectable,
   NotFoundException,
+  Req,
+  Res,
+  UnauthorizedException,
 } from '@nestjs/common';
 import { CreateEmployeeDto } from './dto/create-employee.dto';
 import { UpdateEmployeeDto } from './dto/update-employee.dto';
@@ -9,6 +12,8 @@ import { InjectRepository } from '@nestjs/typeorm';
 import { Employee } from './entities/employee.entity';
 import { Repository } from 'typeorm';
 import { Hotel } from 'src/hotel/entities/hotel.entity';
+import { JwtService } from '@nestjs/jwt';
+import { CustomRequest } from 'src/auth/custom-request.interface';
 
 @Injectable()
 export class EmployeeService {
@@ -17,6 +22,8 @@ export class EmployeeService {
     private employeeRepository: Repository<Employee>,
     @InjectRepository(Hotel)
     private hotelRepository: Repository<Hotel>,
+    private readonly jwtService: JwtService,
+
   ) {}
 
   async create(createEmployeeDto: CreateEmployeeDto): Promise<Employee> {
@@ -55,20 +62,105 @@ export class EmployeeService {
     }
   }
 
-  async findAll(): Promise<Employee[]> {
-    const response = await this.employeeRepository.find();
-    return response;
+  async findAll(@Req() req: CustomRequest): Promise<Employee[]> {
+    try {
+      // Get token from headers
+      const authHeader = req.headers.authorization;
+      if (!authHeader || !authHeader.startsWith('Bearer ')) {
+        throw new UnauthorizedException('Invalid token');
+      }
+
+      // Extract and verify token
+      const token = authHeader.split(' ')[1];
+      const decoded = this.jwtService.verify(token);
+
+      if (!decoded || !decoded.hotel_id) {
+        throw new UnauthorizedException('Invalid token payload');
+      }
+
+      // Fetch employees based on hotel_id
+      const employees = await this.employeeRepository.find({
+        where: { HT_id: decoded.hotel_id },
+      });
+
+      return employees;
+    } catch (error) {
+      throw new UnauthorizedException('Unauthorized access');
+    }
   }
 
-  findOne(id: number) {
-    return `This action returns a #${id} employee`;
+  async findOne(id: number, @Req() req: CustomRequest): Promise<Employee> {
+    try {
+      const authHeader = req.headers.authorization;
+      if (!authHeader || !authHeader.startsWith('Bearer ')) {
+        throw new UnauthorizedException('Invalid token');
+      }
+
+      const token = authHeader.split(' ')[1];
+      const decoded = this.jwtService.verify(token);
+
+      if (!decoded || !decoded.hotel_id) {
+        throw new UnauthorizedException('Invalid token payload');
+      }
+
+      const employee = await this.employeeRepository.findOne({ where: { id, HT_id: decoded.hotel_id } });
+      if (!employee) {
+        throw new NotFoundException(`Employee with ID ${id} not found`);
+      }
+      return employee;
+    } catch (error) {
+      throw new UnauthorizedException('Unauthorized access');
+    }
   }
 
-  update(id: number, updateEmployeeDto: UpdateEmployeeDto) {
-    return `This action updates a #${id} employee`;
+  async update(id: number, updateEmployeeDto: UpdateEmployeeDto,@Req() req: CustomRequest): Promise<Employee> {
+    try {
+      const authHeader = req.headers.authorization;
+      if (!authHeader || !authHeader.startsWith('Bearer ')) {
+        throw new UnauthorizedException('Invalid token');
+      }
+
+      const token = authHeader.split(' ')[1];
+      const decoded = this.jwtService.verify(token);
+
+      if (!decoded || !decoded.hotel_id) {
+        throw new UnauthorizedException('Invalid token payload');
+      }
+
+      const employee = await this.employeeRepository.findOne({ where: { id, HT_id: decoded.hotel_id } });
+      if (!employee) {
+        throw new NotFoundException(`Employee with ID ${id} not found`);
+      }
+
+      await this.employeeRepository.update(id, updateEmployeeDto);
+      return this.employeeRepository.findOne({ where: { id } });
+    } catch (error) {
+      throw new UnauthorizedException('Unauthorized access');
+    }
   }
 
-  remove(id: number) {
-    return `This action removes a #${id} employee`;
+  async remove(id: number, @Req() req: CustomRequest): Promise<void> {
+    try {
+      const authHeader = req.headers.authorization;
+      if (!authHeader || !authHeader.startsWith('Bearer ')) {
+        throw new UnauthorizedException('Invalid token');
+      }
+
+      const token = authHeader.split(' ')[1];
+      const decoded = this.jwtService.verify(token);
+
+      if (!decoded || !decoded.hotel_id) {
+        throw new UnauthorizedException('Invalid token payload');
+      }
+
+      const employee = await this.employeeRepository.findOne({ where: { id, HT_id: decoded.hotel_id } });
+      if (!employee) {
+        throw new NotFoundException(`Employee with ID ${id} not found`);
+      }
+
+      await this.employeeRepository.delete(id);
+    } catch (error) {
+      throw new UnauthorizedException('Unauthorized access');
+    }
   }
 }
