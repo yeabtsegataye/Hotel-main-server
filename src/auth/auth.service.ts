@@ -71,7 +71,7 @@ export class AuthService {
         const Hotel_data = await this.hotelRepository.save(hotel);
         console.log(Hotel_data, "hotel data")
 
-        const payload = { id: data.id, email: data.email };
+        const payload = { id: data.id, email: data.email, hotel_id: Hotel_data.id };
 
         const accessToken = this.jwtService.sign(payload, {
           secret: jwtConstants.Access_secret,
@@ -117,16 +117,23 @@ export class AuthService {
       where: { email: authDTO.email },
     });
 
+    const hotel = await this.hotelRepository.findOne({
+      where: { userId: user.id },
+    });
+    if (!hotel) {
+      return res.status(404).send('No hotel found for this user');
+    }
     if (!user) {
       return res.status(404).send('No user found');
     }
+
 
     const isMatch = await bcrypt.compare(decryptedPassword, user.Password);
     if (!isMatch) {
       throw new UnauthorizedException();
     }
 
-    const payload = { id: user.id, email: user.email };
+    const payload = { id: user.id, email: user.email , hotel_id:hotel.id};
 
     const accessToken = this.jwtService.sign(payload, {
       secret: jwtConstants.Access_secret,
@@ -175,6 +182,13 @@ export class AuthService {
       return res.status(404).send('No user found');
     }
 
+    const hotel = await this.hotelRepository.findOne({
+      where: { userId: user.id },
+    });
+    if (!hotel) {
+      return res.status(404).send('No hotel found for this user');
+    }
+
     // Compare the decrypted password with the stored hashed password
     const isMatch = await bcrypt.compare(decryptedPassword, user.Password);
     if (!isMatch) {
@@ -204,7 +218,7 @@ export class AuthService {
       }
 
       // If the license key is valid, proceed with login
-      const payload = { id: user.id, email: user.email };
+      const payload = { id: user.id, email: user.email,hotel_id :hotel.id };
 
       // Generate access token
       const accessToken = this.jwtService.sign(payload, {
@@ -255,10 +269,10 @@ export class AuthService {
       const Payload = await this.jwtService.verify(refreshToken, {
         secret: jwtConstants.Refresh_secret,
       });
-      const { id, email } = Payload;
-      const payload = { id, email };
+      const { id, email,hotel_id } = Payload;
+      const payload = { id, email ,hotel_id};
       const accessToken = this.jwtService.sign(
-        { id, email },
+        { id, email ,hotel_id},
         {
           secret: jwtConstants.Access_secret,
           expiresIn: '1d',
