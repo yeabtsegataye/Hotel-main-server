@@ -28,6 +28,9 @@ export class AuthService {
   ) {}
 
   async Signup(AutDTO: CreateAuthDto, @Res() res: Response) {
+    if(!AutDTO.Password || !AutDTO.email || !AutDTO.hotel_description ||!AutDTO.hotel_name){
+      return {data: 'all input must be filled '}
+    }
     //console.log(AutDTO,'sii aut')
     const SECRET_KEY = process.env.SECRET_KEY; // Ensure this matches the frontend key
 
@@ -58,7 +61,7 @@ export class AuthService {
         const newUser = this.userRepository.create({
           email: AutDTO.email,
           Password: hash,
-          phone: '022',
+          role: 'admin',
         });
      
         const data = await this.userRepository.save(newUser);
@@ -66,7 +69,7 @@ export class AuthService {
         const hotel = this.hotelRepository.create({
           hotel_name: AutDTO.hotel_name,
           hotel_description: AutDTO.hotel_description,
-          userId: data.id
+          user: data
         });
         const Hotel_data = await this.hotelRepository.save(hotel);
         //console.log(Hotel_data, "hotel data")
@@ -118,7 +121,7 @@ export class AuthService {
     });
 
     const hotel = await this.hotelRepository.findOne({
-      where: { userId: user.id },
+      where: { user: user },
     });
     if (!hotel) {
       return res.status(404).send('No hotel found for this user');
@@ -183,7 +186,7 @@ export class AuthService {
     }
 
     const hotel = await this.hotelRepository.findOne({
-      where: { userId: user.id },
+      where: { user: user },
     });
     if (!hotel) {
       return res.status(404).send('No hotel found for this user');

@@ -22,11 +22,7 @@ export class Hotel {
 
   // Many hotels belong to one user
   @ManyToOne(() => User, (user) => user.hotels)
-  @JoinColumn({ name: 'user_id' }) // Specify the foreign key column name
   user: User;
-
-  @Column({ name: 'user_id' }) // Add a column for the foreign key
-  userId: bigint;
 
   // One hotel can have many bills
   @OneToMany(() => Bill, (bill) => bill.hotel)

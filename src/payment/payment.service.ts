@@ -84,19 +84,22 @@ export class PaymentsService {
       });
       console.log(verifyPayment, 'the verified 11111111');
       if (verifyPayment.data.status == 'success') {
-        const data = await this.packegRepository.query(
-          `SELECT * FROM packages WHERE id = ?`,
-          [createPaymentDto.packeg_id],
-        );
-        if (data.length == 0) return { data: 'no packge found' };
+        const user = await this.userRepository.findOne({where:{id:createPaymentDto.user_id}})
+        if(!user){
+          return { data: 'no user found' };
+        }
+        const packages = await this.packegRepository.findOne({where:{id:createPaymentDto.packeg_id}})
+        if(!packages){
+          return { data: 'no packege found' };
+        }
         // Save Payment Record
         const payment = this.paymentsRepository.create({
           ...createPaymentDto,
-          amount: data[0].price,
-          packeg_id: data[0].id,
+          amount:Number(packages.price),
+          package:packages,
           status: verifyPayment.status,
           transaction_id: createPaymentDto.tx_ref,
-          user_id: createPaymentDto.user_id.toString(), // Convert bigint to string
+          user: user, // Convert bigint to string
         });
         await this.paymentsRepository.save(payment);
 
@@ -129,7 +132,7 @@ export class PaymentsService {
 
             const licenseKey = this.generateLicenseKey(
               createPaymentDto.user_id,
-              data[0].id,
+              packages.id,
               total_sub,
             );
             await this.userRepository.update(
@@ -145,7 +148,7 @@ export class PaymentsService {
             // Generate License Key using JWT
             const licenseKey = this.generateLicenseKey(
               createPaymentDto.user_id,
-              data[0].id,
+             packages.id,
               sub_date.sub_date,
             );
             console.log('licensekey', licenseKey);
@@ -165,7 +168,7 @@ export class PaymentsService {
 
             const licenseKey = this.generateLicenseKey(
               createPaymentDto.user_id,
-              data[0].id,
+              packages.id,
               sub_date.sub_date,
             );
             await this.userRepository.update(
@@ -244,8 +247,8 @@ export class PaymentsService {
 
     const License = this.jwtService.sign(payload, {
       secret: jwtConstants.Licence_secret,
-      expiresIn: `40d`, // Expires in minutes
-    });//${expiryInMinutes}
+      expiresIn: `${expiryInMinutes} m`, // Expires in minutes
+    });//
 
     return License;
   }

@@ -21,7 +21,6 @@ export class Food {
   price: number;
 
   @ManyToOne(() => Category, (category) => category.foods, { onDelete: 'CASCADE' })
-  @JoinColumn({ name: 'category_id' }) // Ensures explicit foreign key column
   category: Category;
 
   @OneToMany(() => Ingredient, (ingredient) => ingredient.food)

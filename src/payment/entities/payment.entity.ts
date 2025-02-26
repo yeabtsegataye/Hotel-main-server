@@ -1,19 +1,17 @@
-// src/payments/payment.entity.ts
-
-import { Entity, Column, PrimaryGeneratedColumn, CreateDateColumn, UpdateDateColumn } from 'typeorm';
+import { Packeage } from 'src/packeage/entities/packeage.entity';
+import { User } from 'src/users/entities/user.entity';
+import { Entity, Column, PrimaryGeneratedColumn, ManyToOne, CreateDateColumn, UpdateDateColumn } from 'typeorm';
 
 @Entity('payments')
 export class Payment {
   @PrimaryGeneratedColumn()
   id: number;
 
-  @Column()
- 
-  @Column({ type: 'bigint' })  // Use 'bigint' but TypeScript type as string
-  user_id: string;
+  @ManyToOne(() => User, (user) => user.payments, { onDelete: 'CASCADE' })
+  user: User;
 
-  @Column()
-  packeg_id: number;
+  @ManyToOne(() => Packeage, (packeg) => packeg.payments, { onDelete: 'CASCADE' })
+  package: Packeage;
 
   @Column('decimal', { precision: 10, scale: 2 })
   amount: number;

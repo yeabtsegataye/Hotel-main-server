@@ -24,6 +24,5 @@ export class Category {
 
   // Foreign key to Hotel
   @ManyToOne(() => Hotel, (hotel) => hotel.categories, { onDelete: 'CASCADE' }) 
-  @JoinColumn({ name: 'hotel_id' }) // Ensures explicit foreign key column
   hotel: Hotel;
 }

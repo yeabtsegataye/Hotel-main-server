@@ -23,143 +23,137 @@ export class EmployeeService {
     @InjectRepository(Hotel)
     private hotelRepository: Repository<Hotel>,
     private readonly jwtService: JwtService,
-
   ) {}
 
-  async create(createEmployeeDto: CreateEmployeeDto): Promise<Employee> {
-    // Check if an employee with the same email already exists
-    const hotel = await this.hotelRepository.findOne({
-      where: { userId: createEmployeeDto.user_id },
-    });
-    if (!hotel) {
-      throw new NotFoundException(
-        `${createEmployeeDto.user_id} not found`,
-      );
-    }
-    const hotel_id = hotel.id;
-
-    const existingEmployee = await this.employeeRepository.findOne({
-      where: { email: createEmployeeDto.email },
-    });
-
-    if (existingEmployee) {
-      // Throw a ConflictException if the email already exists
-      throw new ConflictException(
-        'Email must be unique. This user already exists.',
-      );
-    }
-
+  async create(
+    createEmployeeDto: CreateEmployeeDto,
+    @Req() req: CustomRequest,
+  ): Promise<Employee> {
     try {
-      const newEmployee = this.employeeRepository.create({
-        HT_id: hotel_id,
-        ...createEmployeeDto,
+      const hotel_id = await this.validateTokenAndGetHotelId(req);
+      const existingEmployee = await this.employeeRepository.findOne({
+        where: { email: createEmployeeDto.email },
       });
-      //console.log(newEmployee, 'new emp'); // Log the new employee object
-      return await this.employeeRepository.save(newEmployee); // Save to the database
+
+      if (existingEmployee) {
+        throw new ConflictException(
+          'Email must be unique. This user already exists.',
+        );
+      }
+      // Find the hotel entity by ID
+      const hotel = await this.hotelRepository.findOne({
+        where: { id: hotel_id },
+      });
+      if (!hotel) {
+        throw new NotFoundException('Hotel not found');
+      }
+
+      // Create new employee and assign the hotel relation
+      const newEmployee = this.employeeRepository.create({
+        ...createEmployeeDto,
+        hotel, // ✅ Assign the whole Hotel entity instead of HT_id
+      });
+
+      return await this.employeeRepository.save(newEmployee);
     } catch (error) {
-      console.error('Error while saving employee: ', error); // Log any error
-      throw new Error('Error while creating employee'); // Throw error if something goes wrong
+      console.error('Error while saving employee: ', error);
+      throw new Error('Error while creating employee');
     }
+  }
+
+  async validateTokenAndGetHotelId(req: CustomRequest): Promise<number> {
+    const authHeader = req.headers.authorization;
+    if (!authHeader || !authHeader.startsWith('Bearer ')) {
+      throw new UnauthorizedException('Invalid token');
+    }
+
+    const token = authHeader.split(' ')[1];
+    const decoded = this.jwtService.verify(token);
+
+    if (!decoded || !decoded.hotel_id) {
+      throw new UnauthorizedException('Invalid token payload');
+    }
+
+    return decoded.hotel_id;
   }
 
   async findAll(@Req() req: CustomRequest): Promise<Employee[]> {
     try {
-      // Get token from headers
-      const authHeader = req.headers.authorization;
-      if (!authHeader || !authHeader.startsWith('Bearer ')) {
-        throw new UnauthorizedException('Invalid token');
-      }
+      const hotel_id = await this.validateTokenAndGetHotelId(req);
 
-      // Extract and verify token
-      const token = authHeader.split(' ')[1];
-      const decoded = this.jwtService.verify(token);
-
-      if (!decoded || !decoded.hotel_id) {
-        throw new UnauthorizedException('Invalid token payload');
-      }
-
-      // Fetch employees based on hotel_id
-      const employees = await this.employeeRepository.find({
-        where: { HT_id: decoded.hotel_id },
+      return await this.employeeRepository.find({
+        where: { hotel: { id: hotel_id } }, // ✅ Fix: Use relation-based filtering
+        relations: ['hotel'], // ✅ Ensure the hotel relation is loaded if needed
       });
-
-      return employees;
     } catch (error) {
+      console.error('Error fetching employees:', error);
       throw new UnauthorizedException('Unauthorized access');
     }
   }
 
   async findOne(id: number, @Req() req: CustomRequest): Promise<Employee> {
     try {
-      const authHeader = req.headers.authorization;
-      if (!authHeader || !authHeader.startsWith('Bearer ')) {
-        throw new UnauthorizedException('Invalid token');
-      }
+      const hotel_id = await this.validateTokenAndGetHotelId(req);
 
-      const token = authHeader.split(' ')[1];
-      const decoded = this.jwtService.verify(token);
+      const employee = await this.employeeRepository.findOne({
+        where: { id, hotel: { id: hotel_id } }, // ✅ Fix: Use relation-based filtering
+        relations: ['hotel'], // ✅ Ensure the hotel relation is loaded
+      });
 
-      if (!decoded || !decoded.hotel_id) {
-        throw new UnauthorizedException('Invalid token payload');
-      }
-
-      const employee = await this.employeeRepository.findOne({ where: { id, HT_id: decoded.hotel_id } });
       if (!employee) {
         throw new NotFoundException(`Employee with ID ${id} not found`);
       }
       return employee;
     } catch (error) {
+      console.error('Error fetching employee:', error);
       throw new UnauthorizedException('Unauthorized access');
     }
   }
 
-  async update(id: number, updateEmployeeDto: UpdateEmployeeDto,@Req() req: CustomRequest): Promise<Employee> {
+  async update(
+    id: number,
+    updateEmployeeDto: UpdateEmployeeDto,
+    @Req() req: CustomRequest,
+  ): Promise<Employee> {
     try {
-      const authHeader = req.headers.authorization;
-      if (!authHeader || !authHeader.startsWith('Bearer ')) {
-        throw new UnauthorizedException('Invalid token');
-      }
+      const hotel_id = await this.validateTokenAndGetHotelId(req);
 
-      const token = authHeader.split(' ')[1];
-      const decoded = this.jwtService.verify(token);
+      const employee = await this.employeeRepository.findOne({
+        where: { id, hotel: { id: hotel_id } }, // ✅ Fix: Use relation-based filtering
+        relations: ['hotel'],
+      });
 
-      if (!decoded || !decoded.hotel_id) {
-        throw new UnauthorizedException('Invalid token payload');
-      }
-
-      const employee = await this.employeeRepository.findOne({ where: { id, HT_id: decoded.hotel_id } });
       if (!employee) {
         throw new NotFoundException(`Employee with ID ${id} not found`);
       }
 
       await this.employeeRepository.update(id, updateEmployeeDto);
-      return this.employeeRepository.findOne({ where: { id } });
+      return this.employeeRepository.findOne({
+        where: { id },
+        relations: ['hotel'],
+      });
     } catch (error) {
+      console.error('Error updating employee:', error);
       throw new UnauthorizedException('Unauthorized access');
     }
   }
 
   async remove(id: number, @Req() req: CustomRequest): Promise<void> {
     try {
-      const authHeader = req.headers.authorization;
-      if (!authHeader || !authHeader.startsWith('Bearer ')) {
-        throw new UnauthorizedException('Invalid token');
-      }
+      const hotel_id = await this.validateTokenAndGetHotelId(req);
 
-      const token = authHeader.split(' ')[1];
-      const decoded = this.jwtService.verify(token);
+      const employee = await this.employeeRepository.findOne({
+        where: { id, hotel: { id: hotel_id } }, // ✅ Fix: Use relation-based filtering
+        relations: ['hotel'],
+      });
 
-      if (!decoded || !decoded.hotel_id) {
-        throw new UnauthorizedException('Invalid token payload');
-      }
-
-      const employee = await this.employeeRepository.findOne({ where: { id, HT_id: decoded.hotel_id } });
       if (!employee) {
         throw new NotFoundException(`Employee with ID ${id} not found`);
       }
 
       await this.employeeRepository.delete(id);
     } catch (error) {
+      console.error('Error deleting employee:', error);
       throw new UnauthorizedException('Unauthorized access');
     }
   }

@@ -1,4 +1,4 @@
-import { Column, Entity, PrimaryGeneratedColumn, ManyToOne, JoinColumn } from 'typeorm';
+import { Column, Entity, PrimaryGeneratedColumn, ManyToOne } from 'typeorm';
 import { Hotel } from 'src/hotel/entities/hotel.entity';
 
 @Entity('bills')
@@ -18,11 +18,6 @@ export class Bill {
   @Column()
   BL_SUB_Type: string; // Daily, Weekly, Monthly
 
-  // Foreign key relationship to Hotel
-  @ManyToOne(() => Hotel, (hotel) => hotel.bills, { onDelete: 'CASCADE' }) 
-  @JoinColumn({ name: 'HT_id' }) // Foreign key column in the database
-  hotel: Hotel;
-
-  @Column({ name: 'HT_id' }) // This creates an actual column for the foreign key
-  HT_id: number;
+  @ManyToOne(() => Hotel, (hotel) => hotel.bills, { onDelete: 'CASCADE' })
+  hotel: Hotel; // TypeORM will generate a foreign key like `hotelId` automatically
 }

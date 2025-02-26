@@ -10,8 +10,8 @@ export class EmployeeController {
   constructor(private readonly employeeService: EmployeeService) {}
   @LicenseCheck()
   @Post('add')
-  create(@Body() createEmployeeDto: CreateEmployeeDto) {
-    return this.employeeService.create(createEmployeeDto);
+  create(@Body() createEmployeeDto: CreateEmployeeDto,@Req() req: CustomRequest) {
+    return this.employeeService.create(createEmployeeDto,req);
   }
   @LicenseCheck()
   @Get()

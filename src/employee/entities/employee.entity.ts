@@ -38,9 +38,5 @@ export class Employee {
 
   // Define the foreign key relationship with the Hotel entity
   @ManyToOne(() => Hotel, (hotel) => hotel.employees, { onDelete: 'CASCADE' }) 
-  @JoinColumn({ name: 'HT_id' }) // Specify the foreign key column name
   hotel: Hotel;
-
-  @Column() // Store the actual hotel ID as a column
-  HT_id: number;
 }
