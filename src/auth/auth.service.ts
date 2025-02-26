@@ -62,6 +62,7 @@ export class AuthService {
           email: AutDTO.email,
           Password: hash,
           role: 'admin',
+          phone:'09333'
         });
      
         const data = await this.userRepository.save(newUser);
@@ -123,12 +124,14 @@ export class AuthService {
     const hotel = await this.hotelRepository.findOne({
       where: { user: user },
     });
-    if (!hotel) {
-      return res.status(404).send('No hotel found for this user');
-    }
     if (!user) {
       return res.status(404).send('No user found');
     }
+
+    if (!hotel) {
+      return res.status(404).send('No hotel found for this user');
+    }
+
 
 
     const isMatch = await bcrypt.compare(decryptedPassword, user.Password);
@@ -342,7 +345,7 @@ export class AuthService {
       const User = await this.userRepository.findOne({
         where: { id: user.id },
       });
-      if (!User.licenceKey) {
+      if (!user ||!User?.licenceKey) {
         return res.send({ verified: false });
       }
       const key = User.licenceKey

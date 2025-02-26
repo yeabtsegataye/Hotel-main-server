@@ -9,7 +9,7 @@ export class CreatePaymentDto {
   @IsNumber()
   packeg_id: number; // Change from 'any' to number
 
-  @IsNotEmpty()
-  @IsString()
+  // @IsNotEmpty()
+  // @IsString()
   tx_ref: string; // Ensure tx_ref is a string
 }
