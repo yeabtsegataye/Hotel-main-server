@@ -3,7 +3,6 @@ import {
   Injectable,
   NotFoundException,
   Req,
-  Res,
   UnauthorizedException,
 } from '@nestjs/common';
 import { CreateEmployeeDto } from './dto/create-employee.dto';
@@ -14,6 +13,7 @@ import { Repository } from 'typeorm';
 import { Hotel } from 'src/hotel/entities/hotel.entity';
 import { JwtService } from '@nestjs/jwt';
 import { CustomRequest } from 'src/auth/custom-request.interface';
+import * as bcrypt from 'bcrypt';
 
 @Injectable()
 export class EmployeeService {
@@ -43,15 +43,17 @@ export class EmployeeService {
       // Find the hotel entity by ID
       const hotel = await this.hotelRepository.findOne({
         where: { id: hotel_id },
+        relations:['user']
       });
-      if (!hotel) {
+      if (!hotel || hotel.user.role !=='admin' ) {
         throw new NotFoundException('Hotel not found');
       }
-
+      const hash = await bcrypt.hash(createEmployeeDto.password, 10);
       // Create new employee and assign the hotel relation
       const newEmployee = this.employeeRepository.create({
         ...createEmployeeDto,
         hotel, // ✅ Assign the whole Hotel entity instead of HT_id
+        password: hash,
       });
 
       return await this.employeeRepository.save(newEmployee);

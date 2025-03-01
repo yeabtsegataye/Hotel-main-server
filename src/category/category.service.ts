@@ -30,19 +30,23 @@ export class CategoryService {
   ) {}
 
   private extractHotelIdFromToken(req: CustomRequest): number {
-    const authHeader = req.headers.authorization;
-    if (!authHeader || !authHeader.startsWith('Bearer ')) {
-      throw new UnauthorizedException('Invalid token');
+    try {
+      const authHeader = req.headers.authorization;
+      if (!authHeader || !authHeader.startsWith('Bearer ')) {
+        throw new UnauthorizedException('Invalid token');
+      }
+
+      const token = authHeader.split(' ')[1];
+      const decoded = this.jwtService.verify(token);
+
+      if (!decoded || !decoded.hotel_id) {
+        throw new UnauthorizedException('Invalid token payload');
+      }
+
+      return decoded.hotel_id;
+    } catch (error) {
+      return error;
     }
-
-    const token = authHeader.split(' ')[1];
-    const decoded = this.jwtService.verify(token);
-
-    if (!decoded || !decoded.hotel_id) {
-      throw new UnauthorizedException('Invalid token payload');
-    }
-
-    return decoded.hotel_id;
   }
 
   async create(

@@ -72,7 +72,6 @@ import { Review } from './review/entities/review.entity';
         limit: 600,
       },
     ]),
-    BillsModule,
     CategoryModule,
     HotelModule,
     EmployeeModule,

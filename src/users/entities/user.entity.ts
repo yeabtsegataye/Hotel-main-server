@@ -1,3 +1,4 @@
+import { IsNotEmpty } from 'class-validator';
 import { Comment } from 'src/comments/entities/comment.entity';
 import { Hotel } from 'src/hotel/entities/hotel.entity';
 import { Payment } from 'src/payment/entities/payment.entity';
@@ -8,18 +9,22 @@ export class User {
   @PrimaryGeneratedColumn()
   id: bigint;
 
+  @IsNotEmpty()
   @Column({ nullable: false, unique: true })
   email: string;
 
+  @IsNotEmpty()
   @Column({ nullable: false })
   Password: string;
 
+  @IsNotEmpty()
   @Column()
   phone: string;
 
   @Column({ nullable: true })
   licenceKey: string;
 
+  @IsNotEmpty()
   @Column()
   role: string;
 

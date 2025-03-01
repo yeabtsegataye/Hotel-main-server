@@ -23,4 +23,6 @@ export class CreateAuthDto {
   hotel_description: any;
   
   userId: any
+  
+  role : any
 }

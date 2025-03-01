@@ -1,26 +1,40 @@
-import { Entity, PrimaryGeneratedColumn, Column, ManyToOne, JoinColumn } from 'typeorm';
+import { Entity, PrimaryGeneratedColumn, Column, ManyToOne } from 'typeorm';
 import { Hotel } from 'src/hotel/entities/hotel.entity'; // Import the Hotel entity
+import { IsNotEmpty } from 'class-validator';
 
 @Entity('employee')
 export class Employee {
   @PrimaryGeneratedColumn()
   id: number;
-
+  @IsNotEmpty()
   @Column({ length: 100 })
   firstName: string;
 
+  @IsNotEmpty()
   @Column({ length: 100 })
   lastName: string;
 
+  @IsNotEmpty()
   @Column({ unique: true, length: 100 })
   email: string;
 
+  @IsNotEmpty()
+  @Column({ nullable: false })
+  password: string;
+
+  @IsNotEmpty()
+  @Column({ nullable: false })
+  salary: string;
+
+  @IsNotEmpty()
   @Column({ length: 20, nullable: false })
   phone: string;
 
+  @IsNotEmpty()
   @Column({ length: 100, nullable: false })
   department: string;
 
+  @IsNotEmpty()
   @Column({ length: 100, nullable: true })
   jobTitle: string;
 
@@ -30,13 +44,14 @@ export class Employee {
   @Column({ length: 100, nullable: true })
   city: string;
 
+  @IsNotEmpty()
   @Column({ length: 100, nullable: false })
   country: string;
 
-  @Column({ length: 20, nullable: true })
-  postalCode: string;
+  @Column({ default: 'employee', nullable: false })
+  role: string;
 
   // Define the foreign key relationship with the Hotel entity
-  @ManyToOne(() => Hotel, (hotel) => hotel.employees, { onDelete: 'CASCADE' }) 
+  @ManyToOne(() => Hotel, (hotel) => hotel.employees, { onDelete: 'CASCADE' })
   hotel: Hotel;
 }

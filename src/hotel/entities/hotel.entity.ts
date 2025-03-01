@@ -5,15 +5,18 @@ import { Employee } from 'src/employee/entities/employee.entity';
 import { Category } from 'src/category/entities/category.entity';
 import { Order } from 'src/order/entities/order.entity';
 import { Review } from 'src/review/entities/review.entity';
+import { IsNotEmpty } from 'class-validator';
 
 @Entity()
 export class Hotel {
   @PrimaryGeneratedColumn()
   id: number;
 
+  @IsNotEmpty()
   @Column()
   hotel_name: string;
 
+  @IsNotEmpty()
   @Column()
   hotel_description: string;
 

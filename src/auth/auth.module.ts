@@ -8,9 +8,10 @@ import { jwtConstants } from './constants';
 import { AuthGuard } from './auth.guard';
 import { APP_GUARD } from '@nestjs/core';
 import { Hotel } from 'src/hotel/entities/hotel.entity';
+import { Employee } from 'src/employee/entities/employee.entity';
 
 @Module({
-  imports: [TypeOrmModule.forFeature([User,Hotel]),
+  imports: [TypeOrmModule.forFeature([User,Hotel,Employee]),
   JwtModule.register({
     global: true,// to make it globaly available
     secret: jwtConstants.Access_secret,
