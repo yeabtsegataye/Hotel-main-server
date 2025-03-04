@@ -79,6 +79,12 @@ export class PaymentsService {
     console.log('txref from processing', createPaymentDto);
     ////////////////////
     try {
+      const checking = await this.paymentsRepository.findOne({
+        where:{transaction_id :createPaymentDto.tx_ref}
+      })
+      if(checking){
+        return { data: 'failed' }
+      }
       const verifyPayment = await this.chapaService.verify({
         tx_ref: createPaymentDto.tx_ref,
       });

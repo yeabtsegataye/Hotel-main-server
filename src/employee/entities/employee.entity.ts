@@ -51,6 +51,12 @@ export class Employee {
   @Column({ default: 'employee', nullable: false })
   role: string;
 
+  @Column({ nullable: true })
+  otp: string;
+
+  @Column({ nullable: true, type: 'timestamp' })
+  otpExpiration: Date;
+
   // Define the foreign key relationship with the Hotel entity
   @ManyToOne(() => Hotel, (hotel) => hotel.employees, { onDelete: 'CASCADE' })
   hotel: Hotel;

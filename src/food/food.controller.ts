@@ -1,20 +1,25 @@
-import { Controller, Get, Post, Body, Patch, Param, Delete } from '@nestjs/common';
+import { Controller, Get, Post, Body, Patch, Param, Delete, Req, UploadedFile, UseInterceptors } from '@nestjs/common';
 import { FoodService } from './food.service';
 import { CreateFoodDto } from './dto/create-food.dto';
 import { UpdateFoodDto } from './dto/update-food.dto';
+import { CustomRequest } from 'src/auth/custom-request.interface';
+import { FileInterceptor } from '@nestjs/platform-express';
 
 @Controller('food')
 export class FoodController {
-  constructor(private readonly foodService: FoodService) {}
+  constructor(private readonly foodService: FoodService) { }
 
-  @Post()
-  create(@Body() createFoodDto: CreateFoodDto) {
-    return this.foodService.create(createFoodDto);
+  @Post('add')
+  @UseInterceptors(FileInterceptor('image'))
+  create(@Body() createFoodDto: CreateFoodDto, @Req() req: CustomRequest, @UploadedFile() file: Express.Multer.File) {
+    return this.foodService.create(createFoodDto, file, req);
   }
 
-  @Get()
-  findAll() {
-    return this.foodService.findAll();
+  @Get('get/:id')
+  findAll(@Req() req: CustomRequest, @Param('id') id: string) {
+    console.log(id, "controller id");
+    
+    return this.foodService.findAll(req, +id);
   }
 
   @Get(':id')

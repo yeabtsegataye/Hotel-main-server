@@ -28,6 +28,12 @@ export class User {
   @Column()
   role: string;
 
+  @Column({ nullable: true })
+  otp: string;
+
+  @Column({ nullable: true, type: 'timestamp' })
+  otpExpiration: Date;
+
   // One user can have many hotels
   @OneToMany(() => Hotel, (hotel) => hotel.user)
   hotels: Hotel[];

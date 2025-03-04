@@ -14,6 +14,7 @@ import { Hotel } from 'src/hotel/entities/hotel.entity';
 import { JwtService } from '@nestjs/jwt';
 import { CustomRequest } from 'src/auth/custom-request.interface';
 import * as bcrypt from 'bcrypt';
+import { response } from 'express';
 
 @Injectable()
 export class EmployeeService {
@@ -28,7 +29,7 @@ export class EmployeeService {
   async create(
     createEmployeeDto: CreateEmployeeDto,
     @Req() req: CustomRequest,
-  ): Promise<Employee> {
+  ){
     try {
       const hotel_id = await this.validateTokenAndGetHotelId(req);
       const existingEmployee = await this.employeeRepository.findOne({
@@ -56,10 +57,11 @@ export class EmployeeService {
         password: hash,
       });
 
-      return await this.employeeRepository.save(newEmployee);
+      await this.employeeRepository.save(newEmployee);
+       return response.status(200)
     } catch (error) {
       console.error('Error while saving employee: ', error);
-      throw new Error('Error while creating employee');
+      return error.message
     }
   }
 

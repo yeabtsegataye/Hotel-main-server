@@ -2,18 +2,23 @@ import { IsNotEmpty, IsNumber, IsString } from 'class-validator';
 
 export class CreateFoodDto {
   @IsString()
-  @IsNotEmpty()
+  // @IsNotEmpty()
   name: string;
 
   @IsString()
   description?: string;
 
-  @IsNumber()
+  // @IsNumber()
   @IsNotEmpty()
   price: number;
 
   rate: string;
+
+  @IsString()
+  timeOfComplition?: string;
+
   
+  // @IsNumber()
   @IsNotEmpty()
-  hotelId: number;
+  category_id?: number;
 }

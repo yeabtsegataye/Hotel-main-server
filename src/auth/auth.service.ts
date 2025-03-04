@@ -4,6 +4,8 @@ import {
   Res,
   Req,
   Body,
+  BadRequestException,
+  NotFoundException,
 } from '@nestjs/common';
 import { CreateAuthDto } from './dto/create-auth.dto';
 import { InjectRepository } from '@nestjs/typeorm';
@@ -17,6 +19,7 @@ import { jwtConstants } from './constants';
 import { CustomRequest } from './custom-request.interface';
 import { Hotel } from 'src/hotel/entities/hotel.entity';
 import { Employee } from 'src/employee/entities/employee.entity';
+import * as nodemailer from 'nodemailer';
 
 @Injectable()
 export class AuthService {
@@ -37,7 +40,7 @@ export class AuthService {
       !AutDTO.hotel_description ||
       !AutDTO.hotel_name
     ) {
-      return { data: 'all input must be filled ' };
+      return res.status(400).send('all input must be filled');
     }
     //console.log(AutDTO,'sii aut')
     const SECRET_KEY = process.env.SECRET_KEY; // Ensure this matches the frontend key
@@ -132,7 +135,6 @@ export class AuthService {
     const user = await this.userRepository.findOne({
       where: { email: authDTO.email },
     });
-
     const hotel = await this.hotelRepository.findOne({
       where: { user: user },
     });
@@ -146,7 +148,7 @@ export class AuthService {
 
     const isMatch = await bcrypt.compare(decryptedPassword, user.Password);
     if (!isMatch) {
-      throw new UnauthorizedException();
+      throw new UnauthorizedException('unauthorized');
     }
 
     const payload = { id: user.id, email: user.email, hotel_id: hotel.id };
@@ -269,43 +271,43 @@ export class AuthService {
           where: { email: authDTO.email },
           relations: ['hotel'], // Load hotel relation
         });
-    
+
         if (!employee) {
           return res.status(404).send('No employee found');
         }
-    
+
         // **Compare the decrypted password with the stored hashed password**
         const isMatch = await bcrypt.compare(
           decryptedPassword,
           employee.password,
         );
-    
+
         if (!isMatch) {
           return res.status(401).send({ data: 'Invalid credentials' }); // Return 401 for invalid credentials
         }
-    
+
         // **Find the hotel associated with this employee**
         const hotel = employee.hotel;
         if (!hotel) {
           return res.status(404).send('No hotel found for this employee');
         }
         console.log(hotel.id, 'hotl');
-    
+
         const hotel_and_user = await this.hotelRepository.findOne({
           where: { id: hotel.id }, // Find the user using hotel.user.id
           relations: ['user'],
         });
         const user = hotel_and_user.user;
-        console.log(user,'emp usess')
+        console.log(user, 'emp usess');
         if (!user) {
           return res.status(404).send('No owner found for this hotel');
         }
-    
+
         // **Check if the owner's license key is valid**
         if (!user.licenceKey) {
           return res.status(404).send('No license found for this hotel owner');
         }
-    
+
         try {
           const decodedLicenceKey = await this.jwtService.verifyAsync(
             user.licenceKey,
@@ -313,14 +315,14 @@ export class AuthService {
               secret: jwtConstants.Licence_secret,
             },
           );
-    
+
           const currentTime = Math.floor(Date.now() / 1000);
           if (decodedLicenceKey.exp && decodedLicenceKey.exp < currentTime) {
             return res
               .status(401)
               .send('License key expired, please get a new one');
           }
-    
+
           // **Generate tokens using the employee ID instead of the user ID**
           const payload = {
             id: employee.id,
@@ -336,13 +338,13 @@ export class AuthService {
             secret: jwtConstants.Refresh_secret,
             expiresIn: '10d',
           });
-    
+
           res.cookie('refresh_token', refreshToken, {
             httpOnly: true,
             secure: true,
             sameSite: 'none',
           });
-    
+
           return res.send({ accessToken, payload });
         } catch (error) {
           return res.status(401).send('Invalid or expired license key');
@@ -355,7 +357,6 @@ export class AuthService {
       throw new UnauthorizedException('Unknown user role');
     }
   }
-
   /////////////////////////////////
   private extractAccessToken(access_token: string) {
     if (access_token && access_token.startsWith('Bearer ')) {
@@ -509,6 +510,152 @@ export class AuthService {
       return res.send({ verified: false });
     }
   }
+  /////////////////////////
+  // SEND OTP FUNCTION
+  async Send_otp(authDTO: CreateAuthDto, res: Response) {
+    try {
+      if (!authDTO.email) {
+        throw new NotFoundException('Insert your correct email');
+      }
+  
+      const email = authDTO.email// Ensure case insensitivity
+      console.log('Checking email:', authDTO.email);
+  
+      // Find user or employee
+      const user = await this.userRepository.findOne({ where: { email } });
+      const employee = await this.employeeRepository.findOne({ where: { email } });
+  
+      // console.log('User:', user);
+      // console.log('Employee:', employee);
+  
+      if (!user && !employee) {
+        throw new NotFoundException('Email not found');
+      }
+  
+      // Generate 6-digit OTP
+      const otp = Math.floor(100000 + Math.random() * 900000).toString();
+      const otpExpiration = new Date(Date.now() + 10 * 60 * 1000); // 10 minutes expiration
+  
+      // Save OTP
+      if (user) {
+        user.otp = otp;
+        user.otpExpiration = otpExpiration;
+        await this.userRepository.save(user);
+      } else if (employee) {
+        employee.otp = otp;
+        employee.otpExpiration = otpExpiration;
+        await this.employeeRepository.save(employee);
+      }
+  
+      // Send OTP
+      await this.sendEmail(email, otp);
+  
+      return res.status(200).json({ message: 'OTP sent successfully, check your email.' });
+    } catch (error) {
+      return res.status(400).json({ message: error.message || 'Error sending OTP' });
+    }
+  }
+  
+
+  // RESET PASSWORD FUNCTION
+  async reset_password(authDTO: CreateAuthDto, res: Response) {
+    console.log(authDTO,'llllll')
+    try {
+
+      if (!authDTO.email || !authDTO.newPassword || !authDTO.otp) {
+        throw new NotFoundException('Invalid input');
+      }
+
+      const { email, otp, newPassword } = authDTO;
+
+      // Validate OTP: It must be a 6-digit number
+      const otpRegex = /^[0-9]{6}$/;
+      if (!otpRegex.test(otp)) {
+        throw new BadRequestException('invalid OTP number');
+      }
+
+      // Check if OTP exists in employee or user table and is not expired
+      let user = await this.userRepository.findOne({ where: { email, otp } });
+      let employee = await this.employeeRepository.findOne({
+        where: { email, otp },
+      });
+
+      if (!user && !employee) {
+        throw new BadRequestException('Invalid OTP or email');
+      }
+      if (!user?.otp && !employee?.otp) {
+        throw new BadRequestException('Invalid OTP or email');
+      }
+
+      // Check if OTP is expired
+      const currentTime = new Date();
+      if (user && user.otpExpiration < currentTime) {
+        user.otp = null;
+        user.otpExpiration = null;
+        await this.userRepository.save(user);
+        throw new BadRequestException('OTP has expired');
+      }
+      if (employee && employee.otpExpiration < currentTime) {
+        employee.otp = null;
+        employee.otpExpiration = null;
+        await this.employeeRepository.save(employee);
+        throw new BadRequestException('OTP has expired');
+      }
+
+      // Hash the new password
+      const hashedPassword = await bcrypt.hash(newPassword, 10);
+
+      // Update password and remove OTP field
+      if (user) {
+        user.Password = hashedPassword;
+        user.otp = null;
+        user.otpExpiration = null;
+        await this.userRepository.save(user);
+      } else if (employee) {
+        employee.password = hashedPassword;
+        employee.otp = null;
+        employee.otpExpiration = null;
+        await this.employeeRepository.save(employee);
+      }
+
+      return res.status(200).json({ message: 'Password reset successfully' });
+    } catch (error) {
+      return res
+        .status(400)
+        .json({ message: error.message || 'Error resetting password' });
+    }
+  }
+
+  // EMAIL SENDING FUNCTION
+  private async sendEmail(email: string, otp: string) {
+    const transporter = nodemailer.createTransport({
+      service: 'gmail',
+      auth: {
+        user: 'tatitaye0@gmail.com', // Change to your email
+        pass: 'rwln cukh ecly ojib', // Change to your email password or use app password
+      },
+    });
+
+    const mailOptions = {
+      from: 'tatitaye0@gmail.com',
+      to: email,
+      subject: 'Your OTP Code',
+      html: `
+        <div style="font-family: Arial, sans-serif; color: #333; text-align: center; padding: 20px;">
+          <h2 style="color: #4CAF50;">Your OTP Code</h2>
+          <p style="font-size: 18px;">Your OTP code is:</p>
+          <div style="font-size: 24px; font-weight: bold; color: #4CAF50; margin: 20px 0;">
+            ${otp}
+          </div>
+          <p style="font-size: 16px;">This code will expire in <strong>10 minutes</strong>.</p>
+          <p style="font-size: 14px; color: #777;">If you did not request this code, please ignore this email.</p>
+        </div>
+      `,
+    };
+
+    await transporter.sendMail(mailOptions);
+  }
+  ////////////////////////////////////
   async Logout(@Res() res: Response, @Req() req: CustomRequest) {
     console.log('removing cokies');
     res.clearCookie('refresh_token', {

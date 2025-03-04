@@ -17,19 +17,34 @@ export class AuthController {
     return this.authService.Signup(createAuthDto, res);
   }
   
-  @Throttle({ default: { limit: 31, ttl: 60000 } })
+  @Throttle({ default: { limit: 5, ttl: 60000 } })
   @Post('login')
   @Public()
   async Login(@Body() createAuthDto: CreateAuthDto, @Res() res: Response) {
     return this.authService.login(createAuthDto, res);
   }
 
-  @Throttle({ default: { limit: 31, ttl: 60000 } })
+  @Throttle({ default: { limit: 5, ttl: 60000 } })
   @Post('Dash_login')
   @Public()
   async DLogin(@Body() createAuthDto: CreateAuthDto, @Res() res: Response) {
     return this.authService.Dlogin(createAuthDto, res);
   }
+
+  @Throttle({ default: { limit: 1, ttl: 60000} })
+  @Post('send_otp')
+  @Public()
+  async Send_otp(@Body() createAuthDto: CreateAuthDto, @Res() res: Response) {
+    return this.authService.Send_otp(createAuthDto, res);
+  }
+
+  @Throttle({ default: { limit: 5, ttl: 60000 } })
+  @Post('reset_password')
+  @Public()
+  async reset_password(@Body() createAuthDto: CreateAuthDto, @Res() res: Response) {
+    return this.authService.reset_password(createAuthDto, res);
+  }
+
   @Post('refresh-token')
   @Public()
   async refreshToken(@Res() res: Response, @Req() req: CustomRequest) {
