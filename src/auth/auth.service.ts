@@ -558,9 +558,7 @@ export class AuthService {
       return res.status(400).json({ message: error.message || 'Error sending OTP' });
     }
   }
-  
-
-  // RESET PASSWORD FUNCTION
+ // RESET PASSWORD FUNCTION
   async reset_password(authDTO: CreateAuthDto, res: Response) {
     console.log(authDTO,'llllll')
     try {
@@ -628,19 +626,18 @@ export class AuthService {
         .json({ message: error.message || 'Error resetting password' });
     }
   }
-
   // EMAIL SENDING FUNCTION
   private async sendEmail(email: string, otp: string) {
     const transporter = nodemailer.createTransport({
       service: 'gmail',
       auth: {
-        user: 'tatitaye0@gmail.com', // Change to your email
-        pass: 'rwln cukh ecly ojib', // Change to your email password or use app password
+        user: process.env.Email, // Change to your email
+        pass: process.env.Google_App_pwd, // Change to your email password or use app password
       },
     });
 
     const mailOptions = {
-      from: 'tatitaye0@gmail.com',
+      from: process.env.Email,
       to: email,
       subject: 'Your OTP Code',
       html: `
