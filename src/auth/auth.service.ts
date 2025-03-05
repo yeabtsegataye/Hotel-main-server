@@ -48,8 +48,11 @@ export class AuthService {
     const existingUser = await this.userRepository.findOne({
       where: { email: AutDTO.email },
     });
+    const employee_exist = await this.employeeRepository.findOne({
+      where: { email: AutDTO.email },
+    });
 
-    if (existingUser) {
+    if (existingUser || employee_exist) {
       return res.status(400).send('User already exists');
     } else {
       try {
