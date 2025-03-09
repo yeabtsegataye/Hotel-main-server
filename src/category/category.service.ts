@@ -113,7 +113,7 @@ export class CategoryService {
       const categories = await this.categoryRepository.find({
         where: { hotel: { id: hotelId } },
       });
-
+console.log(categories,'fff')
       return categories;
     } catch (error) {
       console.error(error);
@@ -208,6 +208,29 @@ export class CategoryService {
     } catch (error) {
       console.error(error);
       throw new BadRequestException('Failed to delete category');
+    }
+  }
+  async Menue(id:number){
+    if(!id){
+      throw new BadRequestException('invalid hotel id');
+    }
+    try {
+      const hotel = await this.hotelRepository.findOne({
+        where: { id: id },
+      });
+
+      if (!hotel) {
+        throw new NotFoundException('Hotel not found');
+      }
+
+      const categories = await this.categoryRepository.find({
+        where: { hotel: { id: id } },
+      });
+
+      return categories;
+    } catch (error) {
+      console.error(error);
+      throw new BadRequestException('Failed to fetch categories');
     }
   }
 }

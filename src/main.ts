@@ -24,6 +24,7 @@ async function bootstrap() {
       'http://localhost:5174',
       'https://hotel-main-dashboard.onrender.com',
       'https://landing-agay.onrender.com',
+      'https://hotel-menu-s71q.onrender.com'
     ],
     methods: 'GET,HEAD,PUT,PATCH,POST,DELETE',
     allowedHeaders: 'Content-Type, Accept, Authorization',

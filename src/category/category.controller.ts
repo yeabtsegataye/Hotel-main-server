@@ -16,6 +16,7 @@ import { CreateCategoryDto } from './dto/create-category.dto';
 import { UpdateCategoryDto } from './dto/update-category.dto';
 import { FileInterceptor } from '@nestjs/platform-express';
 import { CustomRequest } from 'src/auth/custom-request.interface';
+import { Public } from 'src/auth/public.decorator';
 
 @Controller('cat')
 export class CategoryController {
@@ -28,21 +29,23 @@ export class CategoryController {
     @Req() req: CustomRequest,
     @UploadedFile() file: Express.Multer.File,
   ) {
-   // console.log(file,'the file',createCategoryDto)
-
     if (!file) {
       throw new BadRequestException('Image is required.');
     }
-    return this.categoryService.create(createCategoryDto, file,req);
+    return this.categoryService.create(createCategoryDto, file, req);
   }
-
   @Get('get')
-  findAll(@Req() req: CustomRequest,) {
+  findAll(@Req() req: CustomRequest) {
     return this.categoryService.findAll(req);
   }
-
+  
+  @Get('menu/:id')
+  @Public()
+  Menue(@Param('id') id: number) {
+    return this.categoryService.Menue(id);
+  }
   @Get(':id')
-  findOne(@Param('id') id: string,@Req() req: CustomRequest) {
+  findOne(@Param('id') id: string, @Req() req: CustomRequest) {
     return this.categoryService.findOne(+id, req);
   }
 
@@ -53,13 +56,12 @@ export class CategoryController {
     @Param('id') id: string,
     @Body() updateCategoryDto: UpdateCategoryDto,
     @UploadedFile() file?: Express.Multer.File,
-    
   ) {
-    return this.categoryService.update(req,+id, updateCategoryDto, file);
+    return this.categoryService.update(req, +id, updateCategoryDto, file);
   }
 
   @Delete(':id')
-  remove(@Param('id') id: string,@Req() req: CustomRequest) {
-    return this.categoryService.remove(+id,req);
+  remove(@Param('id') id: string, @Req() req: CustomRequest) {
+    return this.categoryService.remove(+id, req);
   }
 }

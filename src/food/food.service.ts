@@ -126,8 +126,43 @@ export class FoodService {
       throw new BadRequestException('Failed to fetch foods!');
     }
   }
-  
+  ////////////////////////////
+ async menu_Food(id: number) {
+    try {
+      const Category = await this.categoryRepository.find({where:{
+        id:id
+      }}) 
+      if(!Category){
+      throw new BadRequestException('Failed to finde the Hotel!');
+      }
+      const foods = await this.foodRepository.find({where:{
+        category:Category
+      }})
+      return foods;
+    } catch (error) {
+      throw new BadRequestException();
 
+    }
+   
+  }
+  ////////////////////////////
+  async getFoodWithIngredients(id: number) {
+    try {
+      const food = await this.foodRepository.findOne({
+        where: { id },
+        relations: ['ingredients'], // Include related ingredients
+      });
+
+      if (!food) {
+        throw new BadRequestException('Food not found');
+      }
+
+      return food;
+    } catch (error) {
+      throw new BadRequestException('Could not retrieve food details');
+    }
+  }
+  //////////////////////////////
   findOne(id: number) {
     return "This action returns a food";
   }

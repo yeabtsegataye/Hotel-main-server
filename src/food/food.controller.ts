@@ -4,6 +4,7 @@ import { CreateFoodDto } from './dto/create-food.dto';
 import { UpdateFoodDto } from './dto/update-food.dto';
 import { CustomRequest } from 'src/auth/custom-request.interface';
 import { FileInterceptor } from '@nestjs/platform-express';
+import { Public } from 'src/auth/public.decorator';
 
 @Controller('food')
 export class FoodController {
@@ -27,6 +28,17 @@ export class FoodController {
     return this.foodService.findOne(+id);
   }
 
+  @Get('menue_foods/:id')
+  @Public()
+  menu_Food(@Param('id') id: string) {
+    return this.foodService.menu_Food(+id);
+  }
+
+  @Get('menue_foods_details/:id')
+  @Public()
+  menue_foods_details(@Param('id') id: string) {
+    return this.foodService.getFoodWithIngredients(+id);
+  }
   @Patch(':id')
   update(@Param('id') id: string, @Body() updateFoodDto: UpdateFoodDto) {
     return this.foodService.update(+id, updateFoodDto);
