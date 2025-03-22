@@ -1,14 +1,19 @@
 import { IsNotEmpty, IsNumber, IsString } from 'class-validator';
 
 export class CreateOrderDto {
-  @IsString()
+  @IsNumber()
   @IsNotEmpty()
-  customerName: string;
+  quantity: number; // Changed from string to number
 
   @IsNumber()
   @IsNotEmpty()
-  totalAmount: number;
+  foodId: number;
 
+  @IsNumber()
   @IsNotEmpty()
   hotelId: number;
+
+  @IsString()
+  @IsNotEmpty()
+  orderTable: string; // Changed from number to string (if orderTable is a string)
 }

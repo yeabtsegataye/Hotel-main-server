@@ -2,6 +2,7 @@ import { Entity, PrimaryGeneratedColumn, Column, ManyToOne, OneToMany, JoinColum
 import { Ingredient } from 'src/ingredient/entities/ingredient.entity';
 import { Comment } from 'src/comments/entities/comment.entity';
 import { Category } from 'src/category/entities/category.entity';
+import { Order } from 'src/order/entities/order.entity';
 
 @Entity()
 export class Food {
@@ -34,4 +35,7 @@ export class Food {
 
   @OneToMany(() => Comment, (comment) => comment.food)
   comments: Comment[];
+
+  @OneToMany(() => Order, (order) => order.food)
+  orders: Order[];
 }

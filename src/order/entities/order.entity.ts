@@ -1,13 +1,20 @@
-import { Entity, PrimaryGeneratedColumn, Column, ManyToOne } from 'typeorm';
+import {
+  Entity,
+  PrimaryGeneratedColumn,
+  Column,
+  ManyToOne,
+  CreateDateColumn,
+} from 'typeorm';
 import { Hotel } from 'src/hotel/entities/hotel.entity';
+import { Food } from 'src/food/entities/food.entity'; // Import Food entity
 import { IsNotEmpty } from 'class-validator';
 
-@Entity()
+@Entity('orders')
 export class Order {
   @PrimaryGeneratedColumn()
   id: number;
 
-  @Column({ length: 100, default:'Guest' })
+  @Column({ length: 100, default: 'Guest' })
   customerName: string;
 
   @IsNotEmpty()
@@ -15,17 +22,20 @@ export class Order {
   order_tabel: string;
 
   @IsNotEmpty()
-  @Column({ length: 100 })
-  order_time_take: string;
-
-  @IsNotEmpty()
-  @Column({ length: 100 })
+  @Column({ length: 100, default: 'pending' })
   order_status: string;
 
-  @IsNotEmpty()
-  @Column({ type: 'decimal', precision: 10, scale: 2 })
-  totalAmount: number;
+  @Column({nullable:false})
+  quantity: number;
 
-  @ManyToOne(() => Hotel, (hotel) => hotel.orders, { onDelete: 'CASCADE' })
+  // Relationship with Food entity
+  @ManyToOne(() => Food, (food) => food.orders, { nullable: false, onDelete: 'CASCADE' })
+  food: Food;
+
+  // Relationship with Hotel entity
+  @ManyToOne(() => Hotel, (hotel) => hotel.orders, { nullable: false, onDelete: 'CASCADE' })
   hotel: Hotel;
+
+  @CreateDateColumn()
+  createdAt: Date;
 }
