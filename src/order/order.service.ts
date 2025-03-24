@@ -1,4 +1,4 @@
-import { Injectable, NotFoundException, BadRequestException, InternalServerErrorException } from '@nestjs/common';
+import { Injectable, NotFoundException, BadRequestException, InternalServerErrorException, UnauthorizedException } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
 import { Order } from './entities/order.entity';
@@ -6,6 +6,9 @@ import { Hotel } from 'src/hotel/entities/hotel.entity';
 import { CreateOrderDto } from './dto/create-order.dto';
 import { UpdateOrderDto } from './dto/update-order.dto';
 import { Food } from 'src/food/entities/food.entity';
+import { WebSocketGateways } from 'src/Sockets/websocket.gateway';
+import { CustomRequest } from 'src/auth/custom-request.interface';
+import { JwtService } from '@nestjs/jwt';
 
 @Injectable()
 export class OrderService {
@@ -18,19 +21,39 @@ export class OrderService {
 
     @InjectRepository(Food)
     private foodRepository: Repository<Food>,
+
+    private readonly webSocketGateway: WebSocketGateways, // Inject WebSocket Gateway
+
+    private readonly jwtService: JwtService,
+    
   ) {}
+    /**
+   * Extracts hotel_id from the employee's JWT token.
+   */
+    private extractHotelIdFromToken(req: CustomRequest): number {
+      const authHeader = req.headers.authorization;
+      if (!authHeader || !authHeader.startsWith('Bearer ')) {
+        throw new UnauthorizedException('Invalid token');
+      }
+  
+      const token = authHeader.split(' ')[1];
+      const decoded = this.jwtService.verify(token);
+  
+      if (!decoded || !decoded.hotel_id) {
+        throw new UnauthorizedException('Invalid token payload');
+      }
+  
+      return decoded.hotel_id;
+    }
 
   // Create order(s)
   async create(createOrderDto: CreateOrderDto[]) {
-    console.log(createOrderDto,'dtooo')
+    console.log(createOrderDto, 'dtooo');
     try {
       // Check if the input is valid
       if (!createOrderDto || createOrderDto.length === 0) {
         throw new BadRequestException('Order data cannot be empty.');
       }
-
-      // Validate hotel (assuming all orders belong to the same hotel)
-     
 
       // Process each order
       const orders = await Promise.all(
@@ -40,6 +63,7 @@ export class OrderService {
           if (!hotel) {
             throw new NotFoundException(`Hotel with ID ${hotelId} not found.`);
           }
+          
           // Validate food
           const food = await this.foodRepository.findOne({ where: { id: order.foodId } });
           if (!food) {
@@ -51,6 +75,7 @@ export class OrderService {
             food: food,
             quantity: order.quantity,
             order_tabel: order.orderTable,
+            customerName: order.userID || 'Guest',
             hotel: hotel,
           });
         }),
@@ -58,6 +83,14 @@ export class OrderService {
 
       // Save all orders
       await this.orderRepository.save(orders);
+
+      // **🔥 Send WebSocket Notification After Successfully Placing Order**
+      const hotelId = createOrderDto[0].hotelId;
+      this.webSocketGateway.handleNewOrder(null, {
+        hotelId,
+        orderDetails: orders,
+      });
+
       return { message: 'Order(s) placed successfully!', orders };
     } catch (error) {
       throw new InternalServerErrorException(`Failed to create order: ${error.message}`);
@@ -65,21 +98,34 @@ export class OrderService {
   }
 
   // Get all orders
-  async findAll() {
+  async findAll(req: CustomRequest) {
     try {
-      return await this.orderRepository.find({ relations: ['hotel'] });
+      const hotelId = this.extractHotelIdFromToken(req);
+      const orders = await this.orderRepository.find({
+        where: { hotel: { id: hotelId } }, // Filter by hotel ID
+        relations: ['hotel', 'food'], // Include relations
+      });
+      return orders;
     } catch (error) {
       throw new InternalServerErrorException(`Failed to fetch orders: ${error.message}`);
     }
   }
 
+
   // Get single order by ID
-  async findOne(id: number) {
+  async findOne(req: CustomRequest, id: number) {
     try {
-      const order = await this.orderRepository.findOne({ where: { id }, relations: ['hotel'] });
+      const hotelId = this.extractHotelIdFromToken(req);
+
+      const order = await this.orderRepository.findOne({
+        where: { id, hotel: { id: hotelId } }, // Ensure the order belongs to the hotel
+        relations: ['hotel', 'food'],
+      });
+
       if (!order) {
         throw new NotFoundException(`Order with ID ${id} not found.`);
       }
+
       return order;
     } catch (error) {
       throw new InternalServerErrorException(`Failed to fetch order: ${error.message}`);
@@ -87,9 +133,17 @@ export class OrderService {
   }
 
   // Update order
-  async update(id: number, updateOrderDto: UpdateOrderDto) {
+  async update(req: CustomRequest, id: number, updateOrderDto: UpdateOrderDto) {
     try {
-      const order = await this.orderRepository.findOne({ where: { id } });
+      const hotelId = this.extractHotelIdFromToken(req);
+ if(!hotelId){
+  throw new NotFoundException(`hotel with ID ${id} not found.`);
+
+ }
+      const order = await this.orderRepository.findOne({
+        where: { id, hotel: { id: hotelId } }, // Ensure the order belongs to the hotel
+      });
+
       if (!order) {
         throw new NotFoundException(`Order with ID ${id} not found.`);
       }
@@ -101,11 +155,15 @@ export class OrderService {
       throw new InternalServerErrorException(`Failed to update order: ${error.message}`);
     }
   }
-
   // Delete order
-  async remove(id: number) {
+  async remove(req: CustomRequest, id: number) {
     try {
-      const order = await this.orderRepository.findOne({ where: { id } });
+      const hotelId = this.extractHotelIdFromToken(req);
+
+      const order = await this.orderRepository.findOne({
+        where: { id, hotel: { id: hotelId } }, // Ensure the order belongs to the hotel
+      });
+
       if (!order) {
         throw new NotFoundException(`Order with ID ${id} not found.`);
       }

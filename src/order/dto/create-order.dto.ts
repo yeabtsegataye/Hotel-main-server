@@ -13,6 +13,8 @@ export class CreateOrderDto {
   @IsNotEmpty()
   hotelId: number;
 
+  userID : string;
+
   @IsString()
   @IsNotEmpty()
   orderTable: string; // Changed from number to string (if orderTable is a string)

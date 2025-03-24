@@ -31,6 +31,7 @@ import { Food } from './food/entities/food.entity';
 import { Ingredient } from './ingredient/entities/ingredient.entity';
 import { Order } from './order/entities/order.entity';
 import { Review } from './review/entities/review.entity';
+import { WebSocketGateways } from './Sockets/websocket.gateway';
 @Module({
   imports: [
     ConfigModule.forRoot(), // for env
@@ -87,6 +88,8 @@ import { Review } from './review/entities/review.entity';
       provide: APP_GUARD,
       useClass: ThrottlerGuard,
     },
+    WebSocketGateways,
+
   ],
 })
 export class AppModule implements NestModule {
