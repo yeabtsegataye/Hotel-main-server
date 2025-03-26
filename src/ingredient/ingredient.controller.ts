@@ -7,7 +7,7 @@ import { UpdateIngredientDto } from './dto/update-ingredient.dto';
 export class IngredientController {
   constructor(private readonly ingredientService: IngredientService) {}
 
-  @Post()
+  @Post('add')
   create(@Body() createIngredientDto: CreateIngredientDto) {
     return this.ingredientService.create(createIngredientDto);
   }
@@ -16,7 +16,10 @@ export class IngredientController {
   findAll() {
     return this.ingredientService.findAll();
   }
-
+  @Get('food/:foodId')
+  findByFood(@Param('foodId') foodId: number) {
+    return this.ingredientService.findByFood(foodId);
+  }
   @Get(':id')
   findOne(@Param('id') id: string) {
     return this.ingredientService.findOne(+id);
